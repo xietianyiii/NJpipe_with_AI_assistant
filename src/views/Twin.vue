@@ -1,0 +1,1040 @@
+<template>
+  <div class="twin-container">
+    <!-- 渲染窗口 -->
+    <div id="player" class="player"></div>
+
+    <!-- 面板组件 -->
+    <div class="panel-container">
+      <DrainagePanel
+        v-if="activePanel === 'drainage'"
+        :is-dra-card2-close-button-visible="isDraCard2CloseButtonVisible"
+        :is-dra-card3-close-button-visible="isDraCard3CloseButtonVisible"
+        :is-dra-card4-close-button-visible="isDraCard4CloseButtonVisible"
+        @update:isDraCard2CloseButtonVisible="handleDraCard2Visible"
+        @update:isDraCard3CloseButtonVisible="
+          isDraCard3CloseButtonVisible = $event
+        "
+        @update:isDraCard4CloseButtonVisible="
+          isDraCard4CloseButtonVisible = $event
+        "
+        @create-sewage-tp="handleCreateSewageTP"
+        @create-poi="handleCreatePumpPoi"
+        @delete-poi="handleDeletePumpPoi"
+        @create-shp-area="handleCreateShpArea"
+        @delete-shp-area="handleDeleteShpArea"
+        @create-pipeline="handleCreatePipeline"
+        @clear-pipeline="handleClearPipeline"
+        @dra-defect-row-click="handleDraDefectRowClick"
+        @digClicked="handleDigClicked"
+        @digcutClicked="handleDigCutClicked"
+        @resetdigcutClicked="handleResetDigCutClicked"
+        @pipeliftClicked="handlePipeliftClicked"
+        @resetpipeliftClicked="handleResetPipeliftClicked"
+        @pipelightClicked="handlePipelightClicked"
+        @resetpipelightClicked="handleResetPipelightClicked"
+        @liquidlevelClicked="handleLiquidlevelClicked"
+        @resetliquidlevelClicked="handleResetLiquidlevelClicked"
+        @flowdirectionClicked="handleFlowdirectionClicked"
+        @resetflowdirectionClicked="handleResetFlowdirectionClicked"
+        @pipevisibilityToggled="handlePipeVisibilityToggled"
+      />
+      <MoniPanel
+        v-else-if="activePanel === 'moni'"
+        :is-moni-card2-close-button-visible="isMoniCard2CloseButtonVisible"
+        :is-moni-card4-close-button-visible="isMoniCard4CloseButtonVisible"
+        @update:isMoniCard4CloseButtonVisible="handleMoniCard4Visible"
+        @update:isMoniCard2CloseButtonVisible="handleMoniCard2Visible"
+        @create-poi="handleCreateRainPoi"
+        @delete-poi="handleDeleteRainPoi"
+        @create-equal-rain="handleCreateEqualRain"
+        @water-logging-row-click="handleWaterLoggingRowClick"
+        @create-water-logging="handleCreateWaterLogging"
+        @delete-water-logging="handleDeleteWaterLogging"
+      />
+      <SimPanel
+        v-else-if="activePanel === 'sim'"
+        :is-sim-card4-close-button-visible="isSimCard4CloseButtonVisible"
+        @update:isSimCard4CloseButtonVisible="handleSimCard4Visible"
+        @create-poi="handleCreateFloodPumpCar"
+        @delete-poi="handleDeleteFloodPumpCar"
+        @onSmartDispatchClicked="handleSmartDispatchClicked"
+        @onDispatchExecutionClicked="handleDispatchExecutionClicked"
+      />
+    </div>
+
+    <!-- Legend Card -->
+    <LegendCard
+      v-show="showLegendCard"
+      :legend-type="currentLegendType"
+      @selection-change="handleLegendSelectionChange"
+    />
+
+    <div v-if="showChart" class="chart-panel">
+      <h3>{{ currentStation }} - 曲线监测</h3>
+      <iframe
+        :src="chartUrl"
+        width="420"
+        height="320"
+        frameborder="0"
+        style="border-radius: 6px; overflow: hidden"
+      ></iframe>
+    </div>
+
+    <!-- 水体生成控制按钮 -->
+    <div class="inundation-controls">
+      <button
+        class="control-btn generate-btn"
+        :class="{ loading: isLoading }"
+        @click="generateInundation"
+        :disabled="isLoading"
+      >
+        <span v-if="!isLoading">生成水体</span>
+        <span v-else>生成中...</span>
+      </button>
+
+      <button class="control-btn clear-btn" @click="clearInundation">
+        清除水体
+      </button>
+
+      <button
+        class="control-btn material-btn"
+        :class="{ loading: isLoading }"
+        @click="handleUpdateCamera"
+        :disabled="isLoading"
+      >
+        <span v-if="!isLoading">更新相机</span>
+        <span v-else>创建中...</span>
+      </button>
+    </div>
+
+    <!-- 加载遮罩 -->
+    <div v-if="showLoadingOverlay" class="loading-overlay">
+      <div class="loading-spinner"></div>
+      <div class="loading-text">初始化中...</div>
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import {
+  ref,
+  onMounted,
+  onBeforeUnmount,
+  computed,
+  defineAsyncComponent,
+  watch,
+} from "vue";
+import { useRoute } from "vue-router";
+import { createCircleRange } from "@/utils/CreateCircleRange";
+import WdpApi from "wdpapi";
+import WimApi from "@wdp-api/wim-api";
+import { InundationGenerator } from "@/utils/Inund_Gen";
+import { createPois } from "@/utils/createPois";
+import { handleDeleteAllPois } from "@/utils/deletePois";
+import { createShpArea } from "@/utils/createShpArea";
+import { deleteShpArea } from "@/utils/deleteShpArea";
+import { createAndRunHeatmap } from "@/utils/CreateHeatmap";
+import {
+  createMovePath,
+  createMoveVehicle,
+  startVehicleMove,
+} from "@/utils/CreateMovePath";
+import {
+  startPickPoint,
+  endPickPoint,
+  getPickedPoints,
+} from "@/utils/StartPickPoint";
+import {
+  startDigTerrainAnalysis,
+  endDigTerrainAnalysis,
+} from "@/utils/CreateSection";
+import {
+  createAndRunInundation,
+  deleteInundationAlgorithm,
+} from "@/utils/CreateInundation";
+import {
+  createPipeline,
+  setPipelineHeight,
+  setPipelineHighlight,
+  setPipelineVisible,
+  setPipeLiquidLevel,
+} from "@/utils/CreatePipeline";
+import { updateCamera } from "@/utils/updateCamera";
+// 导入面板组件（移除文件扩展名以改进模块解析）
+import DrainagePanel from "@/components/Drainage";
+import MoniPanel from "@/components/Moni";
+import SimPanel from "@/components/Sim";
+import { setStationVisibility } from "@/utils/setStationVisibility";
+const LegendCard = defineAsyncComponent(
+  () => import("@/components/Twin/legend-card.vue")
+);
+
+const currentLegendType = ref<"pump" | "rain" | "waterlog" | null>(null);
+const PumpPoiRegistry = ref<{ customId: string; stationType: string }[]>([]);
+const RainPoiRegistry = ref<{ customId: string; stationType: string }[]>([]);
+const WaterLoggingPoiRegistry = ref<
+  { customId: string; stationType: string }[]
+>([]);
+const FloodPumpCarRegistry = ref<{ customId: string; stationType: string }[]>(
+  []
+);
+
+const shpAreaRegistry = ref<string[]>([]);
+
+let App = null;
+let inundationGenerator = null;
+const loading = ref(true);
+const loadingText = ref("场景初始化中...");
+
+const currentStation = ref<string | null>(null);
+const showChart = ref(false);
+const chartUrl = ref("");
+
+// 控制LegendCard的显示状态，默认隐藏
+const showLegendCard = ref(false);
+
+// 控制DrainagePanel中按钮的显示状态
+const isDraCard2CloseButtonVisible = ref(false);
+const isDraCard3CloseButtonVisible = ref(false);
+const isDraCard4CloseButtonVisible = ref(false);
+
+// 控制MoniPanel中按钮的显示状态
+const isMoniCard2CloseButtonVisible = ref(false);
+const isMoniCard4CloseButtonVisible = ref(false);
+
+// 控制SimPanel中按钮的显示状态
+const isSimCard4CloseButtonVisible = ref(false);
+
+// 路由参数
+const route = useRoute();
+const activePanel = computed(() => route.query.panel || "drainage");
+const routeAction = computed(() => route.query.action || "");
+
+// 监听路由参数变化
+watch(routeAction, async (newAction) => {
+  if (newAction === "moni") {
+    console.log("📢 点击了模拟");
+    App.Environment.SetSceneWeather("ModerateRain", 3, false);
+    // const position: [number, number, number] = [
+    //   120.97118575059994, 31.337138265349967, 3207.6395784932447,
+    // ];
+    // const rotation = { pitch: -34.0119743347168, yaw: -111.73487091064453 };
+    // await updateCamera(App, position, rotation, 1);
+    // 如果RainPoiRegistry不为空，显示LegendCard
+    if (RainPoiRegistry.value && RainPoiRegistry.value.length > 0) {
+      showLegendCard.value = true;
+    }
+  } else if (newAction === "drainage") {
+    App.Environment.SetSceneWeather("Overcast", 3, false);
+    // 如果PumpPoiRegistry不为空，显示LegendCard
+    if (PumpPoiRegistry.value && PumpPoiRegistry.value.length > 0) {
+      showLegendCard.value = true;
+    }
+  } else if (newAction === "sim") {
+    App.Environment.SetSceneWeather("Overcast", 3, false);
+    showLegendCard.value = false;
+  }
+});
+
+function handleMoniCard2Visible(val: boolean) {
+  isMoniCard2CloseButtonVisible.value = val;
+  if (val) {
+    currentLegendType.value = "rain";
+    showLegendCard.value = true;
+  }
+}
+
+function handleMoniCard4Visible(val: boolean) {
+  isMoniCard4CloseButtonVisible.value = val;
+  if (val) {
+    currentLegendType.value = "waterlog";
+    showLegendCard.value = true;
+  }
+}
+
+function handleDraCard2Visible(val: boolean) {
+  isDraCard2CloseButtonVisible.value = val;
+  if (val) {
+    currentLegendType.value = "pump";
+    showLegendCard.value = true;
+  }
+}
+
+function handleSimCard4Visible(val: boolean) {
+  isSimCard4CloseButtonVisible.value = val;
+  if (val) {
+    currentLegendType.value = "pump";
+    showLegendCard.value = true;
+  }
+}
+
+onMounted(() => {
+  App = new WdpApi({
+    id: "player",
+    order: "233222b445716d9338b92997676e1f9d",
+    url: "https://dtp-api.51aes.com",
+    resolution: [3824, 1924],
+    debugMode: "normal",
+    keyboard: { normal: false, func: false },
+  });
+
+  App.Plugin.Install(WimApi);
+
+  // 启动云渲染
+  App.Renderer.Start()
+    .then((res) => {
+      if (res.success) {
+        console.log("✅ WebRTC 连接成功，等待场景加载...");
+        loadingText.value = "正在加载场景...";
+        registerRenderEvents();
+      } else {
+        loading.value = false;
+      }
+    })
+    .catch((err) => {
+      loading.value = false;
+    });
+});
+
+/** 修复点击弹窗页面上移问题 */
+function fixWdpInputBug() {
+  const fix = () => {
+    const input = document.getElementById("playerInput");
+    if (input) {
+      input.style.position = "fixed";
+    }
+  };
+  fix();
+  const observer = new MutationObserver(fix);
+  observer.observe(document.body, { childList: true, subtree: true });
+}
+
+/** 注册事件 */
+function registerRenderEvents() {
+  if (!App?.Renderer?.RegisterEvent) {
+    console.warn("⚠️ 当前 SDK 不支持 RegisterEvent，请确认版本");
+    return;
+  }
+
+  App.Renderer.RegisterEvent([
+    {
+      name: "onVideoReady",
+      func: async function () {
+        console.log("🎬 视频流连接成功，场景已渲染！");
+        inundationGenerator = new InundationGenerator(App);
+
+        // 设置天气为 LightRain
+        try {
+          await App.Environment.GetSceneWeather();
+          await App.Environment.SetSceneWeather("Overcast", 3, false);
+          console.log("🌤️ 天气已设置为阴天");
+        } catch (error) {
+          console.error("❌ 设置天气失败:", error);
+        }
+
+        loadingText.value = "场景加载完成！";
+        setTimeout(() => (loading.value = false), 800);
+      },
+    },
+    {
+      name: "onStopedRenderCloud",
+      func: function (res) {
+        loadingText.value = "渲染中断，请刷新重试。";
+        loading.value = true;
+      },
+    },
+  ]);
+}
+
+/** 生成水体 */
+async function generateInundation() {
+  if (!inundationGenerator) {
+    console.error("⚠️ 水体生成器未初始化");
+    return;
+  }
+
+  try {
+    const result = await inundationGenerator.generateInundation();
+
+    if (result.success) {
+      console.log("✅ 水体生成完成:", result);
+    } else {
+      throw new Error(result.error || "水体生成失败");
+    }
+  } catch (error) {
+    console.error("❌ 水体生成失败:", error);
+  }
+}
+
+/** 清除水体 */
+async function clearInundation() {
+  if (!inundationGenerator) {
+    console.error("⚠️ 水体生成器未初始化");
+    alert("水体生成器未初始化");
+    return;
+  }
+
+  try {
+    await inundationGenerator.destroy();
+    inundationGenerator.clearCache();
+    console.log("🧹 水体已清除");
+    alert("水体已清除");
+  } catch (error) {
+    console.error("❌ 清除水体失败:", error);
+    alert(`清除水体失败: ${error.message || error}`);
+  }
+}
+
+async function handleUpdateCamera() {
+  const res = await App.CameraControl.GetCameraInfo();
+  console.log(res);
+
+  const points = await getPickedPoints(App, "surface");
+
+  if (points.length > 0) {
+    console.log("📍 用户取到的点坐标：", points);
+  }
+}
+
+async function handleCreatePumpPoi() {
+  const position: [number, number, number] = [
+    120.93097610875282, 31.377814253101636, 335.74830889574747,
+  ];
+  const rotation = { pitch: -4.290104866027832, yaw: 51.65932083129883 };
+  await updateCamera(App, position, rotation, 2);
+
+  console.log("📩 收到泵站监测按钮点击事件");
+
+  const coords: [number, number, number?][] = [
+    [120.97755387402134, 31.31731400001077, 71],
+    [120.94278484970378, 31.370710684920795, 71],
+  ];
+
+  const stationTypes = ["雨水泵站", "污水泵站"];
+
+  const infoUrls = [
+    "http://10.100.10.124:8090/inundation/html/pump1.html",
+    "http://10.100.10.124:8090/inundation/html/pump2.html",
+  ];
+
+  const curveUrls = [
+    "http://10.100.10.124:8090/inundation/html/pump1_curve.html",
+    "http://10.100.10.124:8090/inundation/html/pump2_curve.html",
+  ];
+
+  PumpPoiRegistry.value = await createPois(
+    App,
+    coords,
+    undefined,
+    undefined,
+    infoUrls,
+    curveUrls,
+    stationTypes,
+    openStationCurve,
+    [450, 300]
+  );
+
+  console.log("📋 已记录的对象信息:", PumpPoiRegistry.value);
+
+  // 显示LegendCard
+  showLegendCard.value = true;
+
+  setTimeout(() => fixWdpInputBug(), 500);
+}
+
+async function handleDeletePumpPoi() {
+  await handleDeleteAllPois(App, PumpPoiRegistry.value);
+
+  // 隐藏LegendCard
+  showLegendCard.value = false;
+}
+
+async function handleCreateRainPoi() {
+  const position: [number, number, number] = [
+    121.14154703714782, 31.300770805083634, 331.514690278716,
+  ];
+  const rotation = { pitch: -5.135944843292236, yaw: 168.1057586669922 };
+  await updateCamera(App, position, rotation, 2);
+
+  console.log("📩 收到雨量监测按钮点击事件");
+
+  const coords: [number, number, number?][] = [
+    [121.0505133647897, 31.260351721475384, 71],
+    [121.1283504344286, 31.30448758130633, 71],
+  ];
+
+  const stationTypes = ["60mm", "40mm"];
+
+  const infoUrls = [
+    "http://10.100.10.124:8090/inundation/html/rain1.html",
+    "http://10.100.10.124:8090/inundation/html/rain2.html",
+  ];
+
+  const curveUrls = [
+    "http://10.100.10.124:8090/inundation/html/rain1_curve.html",
+    "http://10.100.10.124:8090/inundation/html/rain2_curve.html",
+  ];
+
+  RainPoiRegistry.value = await createPois(
+    App,
+    coords,
+    undefined,
+    undefined,
+    infoUrls,
+    curveUrls,
+    stationTypes,
+    openStationCurve,
+    [450, 200]
+  );
+
+  console.log("📋 已记录的对象信息:", RainPoiRegistry.value);
+
+  // 显示LegendCard
+  showLegendCard.value = true;
+
+  setTimeout(() => fixWdpInputBug(), 500);
+}
+
+async function handleDeleteRainPoi() {
+  await handleDeleteAllPois(App, RainPoiRegistry.value);
+
+  // 隐藏LegendCard
+  showLegendCard.value = false;
+}
+
+async function handleCreateWaterLogging() {
+  const position: [number, number, number] = [
+    120.99160942536444, 31.348677502854056, 304.65696434210344,
+  ];
+  const rotation = { pitch: -1.8512829542160034, yaw: -125.38239288330078 };
+  await updateCamera(App, position, rotation, 2);
+  console.log("📩 收到积水点监测按钮点击事件");
+
+  await createAndRunInundation(
+    App,
+    "http://10.100.10.124:8090/inundation/config/Water_log.json"
+  );
+
+  const coords: [number, number, number?][] = [
+    [120.98054103001719, 31.357674881322627, 0],
+    [120.93862251117713, 31.403107643888227, 0],
+    [120.95467504966746, 31.366524698908435, 0],
+    [120.99046220502947, 31.39573707620424, 0],
+  ];
+
+  const stationTypes = ["0mm", "12mm", "24mm", "36mm"];
+
+  const infoUrls = [
+    "http://10.100.10.124:8090/inundation/html/water1.html",
+    "http://10.100.10.124:8090/inundation/html/water2.html",
+    "http://10.100.10.124:8090/inundation/html/water3.html",
+    "http://10.100.10.124:8090/inundation/html/water4.html",
+  ];
+
+  const curveUrls = [];
+
+  WaterLoggingPoiRegistry.value = await createPois(
+    App,
+    coords,
+    undefined,
+    undefined,
+    infoUrls,
+    curveUrls,
+    stationTypes,
+    openStationCurve,
+    [450, 200]
+  );
+
+  console.log("📋 已记录的对象信息:", WaterLoggingPoiRegistry.value);
+
+  // 显示LegendCard
+  showLegendCard.value = true;
+
+  setTimeout(() => fixWdpInputBug(), 500);
+}
+
+async function handleDeleteWaterLogging() {
+  await handleDeleteAllPois(App, WaterLoggingPoiRegistry.value);
+  await deleteInundationAlgorithm();
+  showLegendCard.value = false;
+}
+
+// 处理积水点点击事件
+async function handleWaterLoggingRowClick(data: any) {
+  console.log("📢 收到积水点点击事件:", data);
+  // 使用updateCamera函数移动视角到积水点位置
+  if (App && data.location && data.rotation) {
+    await updateCamera(App, data.location, data.rotation, 2);
+  }
+}
+
+async function handleCreateFloodPumpCar() {
+  const position: [number, number, number] = [
+    120.97479270189582, 31.39091652499695, 5335.463844791039,
+  ];
+  const rotation = { pitch: -85.71633911132812, yaw: -92.71320343017578 };
+  await updateCamera(App, position, rotation, 2);
+  console.log("📩 收到防汛泵车按钮点击事件");
+
+  await createAndRunInundation(
+    App,
+    "http://10.100.10.124:8090/inundation/config/Water_point_grid.json"
+  );
+
+  const coords: [number, number, number?][] = [
+    [120.99202039340129, 31.379904416883047, 0],
+    [120.99161969865257, 31.389445567242284, 0],
+    [120.97844439689983, 31.390520721894664, 0],
+    [120.96073361823875, 31.393966725461677, 0],
+    [120.97448527087013, 31.404281892638185, 0],
+    [120.96481404364127, 31.38541157074577, 0],
+    [120.97446402485654, 31.393557743050675, 0],
+  ];
+
+  const markerNormals = [
+    "http://10.100.10.124:8090/inundation/assets/pngs/car1.png",
+    "http://10.100.10.124:8090/inundation/assets/pngs/car2.png",
+    "http://10.100.10.124:8090/inundation/assets/pngs/car3.png",
+    "http://10.100.10.124:8090/inundation/assets/pngs/car4.png",
+    "http://10.100.10.124:8090/inundation/assets/pngs/car1.png",
+    "http://10.100.10.124:8090/inundation/assets/pngs/car3.png",
+    "http://10.100.10.124:8090/inundation/assets/pngs/water_notok.png",
+  ];
+
+  const markerActives = [
+    "http://10.100.10.124:8090/inundation/assets/pngs/car1.png",
+    "http://10.100.10.124:8090/inundation/assets/pngs/car2.png",
+    "http://10.100.10.124:8090/inundation/assets/pngs/car3.png",
+    "http://10.100.10.124:8090/inundation/assets/pngs/car4.png",
+    "http://10.100.10.124:8090/inundation/assets/pngs/car1.png",
+    "http://10.100.10.124:8090/inundation/assets/pngs/car3.png",
+    "http://10.100.10.124:8090/inundation/assets/pngs/water_notok.png",
+  ];
+
+  const infoUrls = [];
+
+  const curveUrls = [];
+
+  const stationTypes = [];
+
+  FloodPumpCarRegistry.value = await createPois(
+    App,
+    coords,
+    markerNormals,
+    markerActives,
+    infoUrls,
+    curveUrls,
+    stationTypes,
+    openStationCurve,
+    [450, 200]
+  );
+
+  console.log("📋 已记录的对象信息:", FloodPumpCarRegistry.value);
+  showLegendCard.value = false;
+
+  setTimeout(() => fixWdpInputBug(), 500);
+}
+
+async function handleDeleteFloodPumpCar() {
+  await handleDeleteAllPois(App, FloodPumpCarRegistry.value);
+  await deleteInundationAlgorithm();
+  showLegendCard.value = false;
+}
+
+const path1: [number, number, number][] = [
+  [120.97845399909673, 31.3905175224146, 0],
+  [120.97844266469784, 31.390569781567343, 0],
+  [120.97476665448261, 31.39047151625851, 0],
+  [120.97474750842821, 31.39074616850237, 0],
+  [120.97459758080467, 31.39104486412353, 0],
+  [120.97450811392741, 31.393439415479705, 0],
+  [120.97446410197324, 31.39356135563207, 0],
+];
+
+async function handleSmartDispatchClicked() {
+  const position: [number, number, number] = [
+    120.97446402485654, 31.393557743050675, 0,
+  ];
+  await createCircleRange(App, position, 2300);
+
+  await createMovePath(App, path1, "#32CD32", "scan_line");
+
+  await createMoveVehicle(App, path1[0]);
+}
+
+async function handleDispatchExecutionClicked() {
+  const position: [number, number, number] = [
+    120.97595042775713, 31.390777623763363, 905.1810781739052,
+  ];
+  const rotation = { pitch: -80.49603271484375, yaw: -93.47093200683594 };
+  await updateCamera(App, position, rotation, 2);
+  await createMovePath(App, path1, "#32CD32", "scan_line");
+  await createMoveVehicle(App, path1[0]);
+  await startVehicleMove(App, undefined, undefined, 10, false, "play");
+
+  setTimeout(async () => {
+    await createMovePath(App, path1, "#32CD32", "scan_line");
+    await createMoveVehicle(App, path1[0]);
+    await startVehicleMove(App, undefined, undefined, 10, true, "play");
+  }, 12000);
+}
+
+async function handleCreateEqualRain() {
+  const position: [number, number, number] = [
+    120.9742638131965, 31.377667838982788, 3419.1276897183343,
+  ];
+  const rotation = { pitch: -83.52790832519531, yaw: -89.51040649414062 };
+  await updateCamera(App, position, rotation, 2);
+
+  await createAndRunHeatmap(App);
+}
+
+async function handleCreateSewageTP() {
+  const position: [number, number, number] = [
+    121.01438205273841, 31.37637133888531, 150.88803602211226,
+  ];
+  const rotation = { pitch: -29.386911392211914, yaw: -89.97541046142578 };
+  await updateCamera(App, position, rotation, 2);
+}
+
+async function handleCreateShpArea() {
+  const position: [number, number, number] = [
+    120.85626238393874, 31.403795843683145, 3630.278610812755,
+  ];
+  const rotation = { pitch: -75.7804946899414, yaw: 93.45965576171875 };
+  await updateCamera(App, position, rotation, 2);
+
+  const shpUrls = [
+    "http://10.100.10.124:8090/inundation/shp/water_area/poly1.shp",
+    "http://10.100.10.124:8090/inundation/shp/water_area/poly2.shp",
+    "http://10.100.10.124:8090/inundation/shp/water_area/poly3.shp",
+    "http://10.100.10.124:8090/inundation/shp/water_area/poly4.shp",
+  ];
+
+  const colors = ["FFE4B5", "87CEFA", "1E90FF", "FF7F50"];
+
+  shpAreaRegistry.value = await createShpArea(App, shpUrls, colors);
+  console.log("📋 已记录的SHP区域信息:", shpAreaRegistry.value);
+}
+
+/**
+ * 删除所有已创建的 SHP 区域
+ */
+async function handleDeleteShpArea() {
+  console.log("🧹 准备删除所有 SHP 区域:", shpAreaRegistry.value);
+
+  try {
+    await deleteShpArea(App, shpAreaRegistry.value);
+    shpAreaRegistry.value = [];
+  } catch (err) {
+    console.error("❌ 删除 SHP 区域失败:", err);
+  }
+}
+
+async function handleCreatePipeline() {
+  const position: [number, number, number] = [
+    121.02740457338311, 31.319578935523527, 1708.6214824575459,
+  ];
+  const rotation = { pitch: -81.04249572753906, yaw: 75.2750015258789 };
+  await updateCamera(App, position, rotation, 2);
+
+  await createPipeline(
+    App,
+    "//10.66.12.53/x.public/exchange/TMP_THJ/WIM/kunshan/pipeline_network_20251021_110401.shp"
+  );
+  App.Environment.SetSceneWeather("ModerateRain", 3, false);
+  await setPipelineHeight(App, 200);
+  await setPipelineHighlight(App, true, "#ed1941", 100, ["SN", "SL", "ZT"]);
+}
+
+async function handleClearPipeline() {
+  App.Environment.SetSceneWeather("Overcast", 3, false);
+  await setPipelineHeight(App, 0);
+  await setPipelineHighlight(App, false, "#ffe600", 15, ["SN", "SL", "ZT"]);
+}
+
+let DigCameraUpdated = false;
+async function handleDigClicked() {
+  if (!DigCameraUpdated) {
+    const position: [number, number, number] = [
+      121.03948586577572, 31.31394473483386, 11.504332372697972,
+    ];
+    const rotation = { pitch: -9.464871406555176, yaw: -29.764591217041016 };
+    await updateCamera(App, position, rotation, 2);
+    DigCameraUpdated = true; // 标记为已调用
+  }
+
+  await createPipeline(
+    App,
+    "//10.66.12.53/x.public/exchange/TMP_THJ/WIM/kunshan/pipeline_network_20251021_110401.shp"
+  );
+  await startPickPoint(App, false, true, "surface");
+  // App.Environment.SetSceneWeather("ModerateRain", 3, false);
+}
+
+async function handleDigCutClicked() {
+  const coordinates = await getPickedPoints(App, "surface");
+
+  if (!coordinates || coordinates.length < 3) {
+    console.warn("⚠️ 取点数量不足，至少需要 3 个点才能进行剖切分析！");
+    return;
+  }
+  console.log(`📍 共获取到 ${coordinates.length} 个点：`, coordinates);
+
+  await endPickPoint(App);
+  await startDigTerrainAnalysis(App, 20, coordinates);
+  await startPickPoint(App, false, true, "surface");
+}
+
+async function handleResetDigCutClicked() {
+  await endDigTerrainAnalysis(App);
+}
+
+async function handlePipeliftClicked(height: string) {
+  await setPipelineHeight(App, parseFloat(height));
+}
+
+async function handleResetPipeliftClicked() {
+  await setPipelineHeight(App, 0);
+}
+
+async function handlePipelightClicked(
+  type: string,
+  intensity: number,
+  color: string
+) {
+  await setPipelineHighlight(App, true, color, intensity, ["SN", "SL", "ZT"]);
+}
+
+async function handleResetPipelightClicked() {
+  await setPipelineHighlight(App, false, "#ffe600", 15, ["SN", "SL", "ZT"]);
+}
+
+async function handlePipeVisibilityToggled(visible: boolean) {
+  await setPipelineVisible(App, visible, ["SN", "SL", "ZT"]);
+}
+
+async function handleLiquidlevelClicked(
+  pipeLiquidLevel: number,
+  color: string
+) {
+  await setPipeLiquidLevel(App, pipeLiquidLevel, color);
+}
+
+function classifyRainStation(stationType: string, selected: string[]) {
+  // stationType 如 "60mm" 或 "40mm"
+  const value = parseFloat(stationType);
+  if (isNaN(value)) return false;
+
+  if (selected.includes(">50mm") && value > 50) return true;
+  if (selected.includes("<50mm") && value <= 50) return true;
+
+  return false;
+}
+
+function classifyWaterlogStation(stationType: string, selected: string[]) {
+  // stationType 如 "0mm", "12mm", "24mm", "36mm"
+  const value = parseFloat(stationType);
+  if (isNaN(value)) return false;
+
+  if (selected.includes("0mm") && value === 0) return true;
+  if (selected.includes("1-15mm") && value > 0 && value <= 15) return true;
+  if (selected.includes("16-30mm") && value >= 16 && value <= 30) return true;
+  if (selected.includes("30-50mm") && value > 30 && value <= 50) return true;
+
+  return false;
+}
+
+// 处理 LegendCard 选中状态变化
+async function handleLegendSelectionChange(selected: string[]) {
+  console.log("📋 LegendCard 选中状态变化:", selected);
+
+  // 定义泵站和雨量监测类型
+  const PumpTypes = ["雨水泵站", "污水泵站"];
+
+  // 根据当前面板类型分别处理
+  if (currentLegendType.value === "rain") {
+    // 只处理雨量监测
+    for (const poi of RainPoiRegistry.value) {
+      const match = classifyRainStation(poi.stationType, selected);
+      await setStationVisibility(App, [poi], poi.stationType, match);
+    }
+  } else if (currentLegendType.value === "waterlog") {
+    // 只处理积水点监测
+    for (const poi of WaterLoggingPoiRegistry.value) {
+      const match = classifyWaterlogStation(poi.stationType, selected);
+      await setStationVisibility(App, [poi], poi.stationType, match);
+    }
+  } else if (currentLegendType.value === "pump") {
+    // 只处理泵站
+    for (const type of PumpTypes) {
+      const shouldShow = selected.includes(type);
+      await setStationVisibility(App, PumpPoiRegistry.value, type, shouldShow);
+    }
+  }
+}
+
+async function openStationCurve(station: string, action?: string) {
+  console.log("🎯 openStationCurve 被触发:", station, action);
+
+  // 这里你也可以更新右侧面板或状态
+  if (action === "open") {
+    console.log(`📈 ${station} 曲线弹窗已打开`);
+    let position: [number, number, number];
+    let rotation: { pitch: number; yaw: number };
+
+    switch (station) {
+      case "pump1":
+        position = [120.97734909382876, 31.316507687253115, 23.362653086556417];
+        rotation = { pitch: -1.7691400051116943, yaw: -72.36478424072266 };
+        break;
+
+      case "pump2":
+        position = [120.9428333710595, 31.371650716301655, 25.20759203956954];
+        rotation = { pitch: -0.7572699785232544, yaw: 95.45074462890625 };
+        break;
+    }
+
+    await updateCamera(App, position, rotation, 2);
+  } else if (action === "close") {
+    console.log(`❎ ${station} 曲线弹窗已关闭`);
+  }
+}
+
+onBeforeUnmount(() => {
+  if (App?.Renderer?.UnRegisterEvent) {
+    App.Renderer.UnRegisterEvent(["onVideoReady", "onStopedRenderCloud"]);
+  }
+  App?.Renderer?.Stop?.();
+});
+</script>
+
+<style scoped>
+.twin-container {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background: #000;
+}
+
+.player {
+  width: 100%;
+  height: 100%;
+}
+
+/* 面板容器样式 */
+.panel-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 10;
+}
+
+/* 水体生成控制按钮 */
+.inundation-controls {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.control-button {
+  padding: 10px 15px;
+  background: rgba(0, 191, 255, 0.8);
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+}
+
+.control-button:hover {
+  background: rgba(0, 191, 255, 1);
+  transform: translateY(-2px);
+}
+
+.control-button.clear {
+  background: rgba(255, 69, 0, 0.8);
+}
+
+.control-button.clear:hover {
+  background: rgba(255, 69, 0, 1);
+}
+
+.control-button.material {
+  background: rgba(50, 205, 50, 0.8);
+}
+
+.control-button.material:hover {
+  background: rgba(50, 205, 50, 1);
+}
+
+/* Loading 遮罩层 */
+.loading-overlay {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    circle at center,
+    rgba(0, 0, 0, 0.9),
+    rgba(0, 0, 0, 0.95)
+  );
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  color: #fff;
+  z-index: 1000;
+  font-size: 16px;
+  backdrop-filter: blur(5px);
+}
+
+.loading-box {
+  text-align: center;
+}
+
+.spinner {
+  border: 4px solid rgba(255, 255, 255, 0.2);
+  border-top-color: #00bfff;
+  border-radius: 50%;
+  width: 60px;
+  height: 60px;
+  margin: 0 auto 20px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* 淡出动画 */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 1s ease;
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+.chart-panel {
+  position: absolute;
+  top: 100px;
+  right: 40px;
+  background: #fff;
+  border-radius: 8px;
+  padding: 12px;
+  box-shadow: 0 0 12px rgba(0, 0, 0, 0.3);
+  z-index: 500;
+}
+</style>
