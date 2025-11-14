@@ -512,11 +512,12 @@ import { ref, watch } from "vue";
 import type { CheckboxValueType } from "element-plus";
 
 const emit = defineEmits<{
-  (e: 'create-poi'): void;
-  (e: 'delete-poi'): void;
-  (e: 'onSmartDispatchClicked'): void;
-  (e: 'onDispatchExecutionClicked'): void;
-  (e: 'update:isSimCard4CloseButtonVisible', value: boolean): void;
+  (e: "create-poi"): void;
+  (e: "delete-poi"): void;
+  (e: "onSmartDispatchClicked"): void;
+  (e: "onDispatchPlanClicked"): void;
+  (e: "onDispatchExecutionClicked"): void;
+  (e: "update:isSimCard4CloseButtonVisible", value: boolean): void;
 }>();
 
 const props = defineProps({
@@ -530,11 +531,19 @@ const props = defineProps({
 const activeButton = ref<"smart" | "manual" | null>(null);
 
 const handleButtonClick = (type: string) => {
-  if (type === 'smart') {
-    activeButton.value = 'smart';
-    emit('onSmartDispatchClicked');
-  }else if (type === 'manual') {
-    activeButton.value = 'manual';
+  if (type === "smart") {
+    activeButton.value = "smart";
+    priorityValue.value = "priority1";
+    managementUnit.value = "unit1";
+    pumpCategory.value = ["pumpcateg1", "pumpcateg2"];
+    pumpStatus.value = ["pumpstat1", "pumpstat2", "pumpstat3", "pumpstat4"];
+    emit("onSmartDispatchClicked");
+  } else if (type === "manual") {
+    activeButton.value = "manual";
+    priorityValue.value = "";
+    managementUnit.value = "";
+    pumpCategory.value = [];
+    pumpStatus.value = [];
   }
 };
 
@@ -666,18 +675,13 @@ const handlePumpStatusCheckAll = (val: CheckboxValueType) => {
 
 // 调度方案按钮点击处理
 const handleDispatchPlan = () => {
-  console.log("调度方案按钮被点击");
-  console.log("当前选择的条件:");
-  console.log("- 择优排序:", priorityValue.value);
-  console.log("- 管理单位:", managementUnit.value);
-  console.log("- 泵车类别:", pumpCategory.value);
-  console.log("- 泵车状态:", pumpStatus.value);
+  emit("onDispatchPlanClicked");
   // 这里可以添加调度方案的具体逻辑
 };
 
 // 调度执行按钮点击处理
 const handleDispatchExecution = () => {
-  emit('onDispatchExecutionClicked');
+  emit("onDispatchExecutionClicked");
 };
 </script>
 
@@ -1450,17 +1454,15 @@ const handleDispatchExecution = () => {
   background-color: rgba(128, 136, 211, 0.8) !important;
 }
 
-.card4-bottom-select-item :deep(.el-select__placeholder) {
-  color: #ffffff !important;
-  font-family: "YRDZST", sans-serif !important;
-  font-size: 15px !important;
-}
-
 .card4-bottom-select-item :deep(.el-select__selected-item) {
   color: #ffffff !important;
   font-family: "YRDZST", sans-serif !important;
   font-size: 13px !important;
   font-weight: 600;
+}
+
+.card4-bottom-select-item :deep(.el-select__placeholder) {
+  color: #dab6b6 !important;
 }
 
 .card4-bottom-top-btn-container {
@@ -1703,12 +1705,12 @@ const handleDispatchExecution = () => {
   align-items: center;
 }
 .card2-header-left {
-  flex: 1;             
-  text-align: left;     
+  flex: 1;
+  text-align: left;
 }
 
 .card2-header-right {
-  flex-shrink: 0;      
-  text-align: right;   
+  flex-shrink: 0;
+  text-align: right;
 }
 </style>

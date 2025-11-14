@@ -57,6 +57,7 @@
         @update:isSimCard4CloseButtonVisible="handleSimCard4Visible"
         @create-poi="handleCreateFloodPumpCar"
         @delete-poi="handleDeleteFloodPumpCar"
+        @onDispatchPlanClicked="handleDispatchPlanClicked"
         @onSmartDispatchClicked="handleSmartDispatchClicked"
         @onDispatchExecutionClicked="handleDispatchExecutionClicked"
       />
@@ -136,7 +137,11 @@ import { deleteShpArea } from "@/utils/deleteShpArea";
 import { createAndRunHeatmap } from "@/utils/CreateHeatmap";
 import {
   createMovePath,
+  createMultiMovePath,
+  deleteMovePath,
+  deleteAllMovePaths,
   createMoveVehicle,
+  deleteVehicle,
   startVehicleMove,
 } from "@/utils/CreateMovePath";
 import {
@@ -368,21 +373,8 @@ async function generateInundation() {
 
 /** 清除水体 */
 async function clearInundation() {
-  if (!inundationGenerator) {
-    console.error("⚠️ 水体生成器未初始化");
-    alert("水体生成器未初始化");
-    return;
-  }
-
-  try {
-    await inundationGenerator.destroy();
-    inundationGenerator.clearCache();
-    console.log("🧹 水体已清除");
-    alert("水体已清除");
-  } catch (error) {
-    console.error("❌ 清除水体失败:", error);
-    alert(`清除水体失败: ${error.message || error}`);
-  }
+  await deleteMovePath(App);
+  await deleteVehicle(App);
 }
 
 async function handleUpdateCamera() {
@@ -635,31 +627,99 @@ async function handleCreateFloodPumpCar() {
   setTimeout(() => fixWdpInputBug(), 500);
 }
 
+const path0: [number, number, number][] = [
+  [120.97845399909673, 31.3905175224146, 15],
+  [120.97844266469784, 31.390569781567343, 15],
+  [120.97476665448261, 31.39047151625851, 15],
+  [120.97474750842821, 31.39074616850237, 15],
+  [120.97459758080467, 31.39104486412353, 15],
+  [120.97450811392741, 31.393439415479705, 15],
+  [120.97446410197324, 31.39356135563207, 15],
+];
+
 async function handleDeleteFloodPumpCar() {
   await handleDeleteAllPois(App, FloodPumpCarRegistry.value);
   await deleteInundationAlgorithm();
+  await deleteVehicle(App);
+  await deleteAllMovePaths(App);
+  await deleteMovePath(App);
   showLegendCard.value = false;
 }
 
 const path1: [number, number, number][] = [
-  [120.97845399909673, 31.3905175224146, 0],
-  [120.97844266469784, 31.390569781567343, 0],
-  [120.97476665448261, 31.39047151625851, 0],
-  [120.97474750842821, 31.39074616850237, 0],
-  [120.97459758080467, 31.39104486412353, 0],
-  [120.97450811392741, 31.393439415479705, 0],
-  [120.97446410197324, 31.39356135563207, 0],
+  [120.97448647330071, 31.40429533188626, 0],
+  [120.97435029085588, 31.40428548039317, 0],
+  [120.97425662902775, 31.40419967903733, 0],
+  [120.9744649769879, 31.393563256982386, 0],
+];
+
+const path2: [number, number, number][] = [
+  [120.96071034414982, 31.393965308805534, 0],
+  [120.96064762516181, 31.393396971223115, 0],
+  [120.96167826449359, 31.393194810581328, 0],
+  [120.96211397461386, 31.393156094842936, 0],
+  [120.97447549337758, 31.393611108146644, 0],
+  [120.9744820996931, 31.3935638409912, 0],
+];
+
+const path3: [number, number, number][] = [
+  [120.96480345589895, 31.385378393309747, 0],
+  [120.9673694359421, 31.385023719831718, 0],
+  [120.97479771208626, 31.385107603694777, 0],
+  [120.97475375326147, 31.386544822505623, 0],
+  [120.9746649714015, 31.388335198692943, 0],
+  [120.97453726641538, 31.393498702598215, 0],
+  [120.97448195905646, 31.393524121890163, 0],
+];
+
+const path4: [number, number, number][] = [
+  [120.9920088416189, 31.37992965409778, 0],
+  [120.99157799284427, 31.37990440444007, 0],
+  [120.99153197751433, 31.380947762040837, 0],
+  [120.98433740138303, 31.380550927991692, 0],
+  [120.9784041263993, 31.380302657340394, 0],
+  [120.97497994766306, 31.380217113768595, 0],
+  [120.97477021504857, 31.3852641640656, 0],
+  [120.97465524434654, 31.38836082527429, 0],
+  [120.97451002792764, 31.39354561849163, 0],
+  [120.97447766473432, 31.393554198390046, 0],
+];
+
+const path5: [number, number, number][] = [
+  [120.99160359035702, 31.38945619252187, 0],
+  [120.99090976148561, 31.389443363900618, 0],
+  [120.99025079751432, 31.398421404468056, 0],
+  [120.98973556086658, 31.39838260058787, 0],
+  [120.98956725850803, 31.398329620646546, 0],
+  [120.98939458845004, 31.398156460301347, 0],
+  [120.9894989258012, 31.395676789203968, 0],
+  [120.98376977988958, 31.395048883859587, 0],
+  [120.98228872330067, 31.394832238839292, 0],
+  [120.97899948315047, 31.39411409549756, 0],
+  [120.97740904255357, 31.393744643816564, 0],
+  [120.97453708738425, 31.393620554820615, 0],
+  [120.97452393870238, 31.393576021676587, 0],
 ];
 
 async function handleSmartDispatchClicked() {
+  console.log("🚀 选择了智能调度");
+}
+
+async function handleDispatchPlanClicked() {
+  console.log("🚀 选择了调度方案");
   const position: [number, number, number] = [
     120.97446402485654, 31.393557743050675, 0,
   ];
   await createCircleRange(App, position, 2300);
 
-  await createMovePath(App, path1, "#32CD32", "scan_line");
+  await createMultiMovePath(App, path0, "#32CD32", "scan_line");
+  await createMultiMovePath(App, path1, "#00FFFF", "scan_line");
+  await createMultiMovePath(App, path2, "#00FFFF", "scan_line");
+  await createMultiMovePath(App, path3, "#00FFFF", "scan_line");
+  await createMultiMovePath(App, path4, "#00FFFF", "scan_line");
+  await createMultiMovePath(App, path5, "#00FFFF", "scan_line");
 
-  await createMoveVehicle(App, path1[0]);
+  await createMoveVehicle(App, path0[0]);
 }
 
 async function handleDispatchExecutionClicked() {
@@ -668,13 +728,15 @@ async function handleDispatchExecutionClicked() {
   ];
   const rotation = { pitch: -80.49603271484375, yaw: -93.47093200683594 };
   await updateCamera(App, position, rotation, 2);
-  await createMovePath(App, path1, "#32CD32", "scan_line");
-  await createMoveVehicle(App, path1[0]);
+  await deleteAllMovePaths(App);
+
+  await createMovePath(App, path0, "#32CD32", "scan_line");
+  await createMoveVehicle(App, path0[0]);
   await startVehicleMove(App, undefined, undefined, 10, false, "play");
 
   setTimeout(async () => {
-    await createMovePath(App, path1, "#32CD32", "scan_line");
-    await createMoveVehicle(App, path1[0]);
+    await createMovePath(App, path0, "#32CD32", "scan_line");
+    await createMoveVehicle(App, path0[0]);
     await startVehicleMove(App, undefined, undefined, 10, true, "play");
   }, 12000);
 }
