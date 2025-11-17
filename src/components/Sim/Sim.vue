@@ -1454,6 +1454,13 @@ const handleDispatchExecution = () => {
   background-color: rgba(128, 136, 211, 0.8) !important;
 }
 
+.card4-bottom-select-item :deep(.el-select__wrapper:not(:has(.el-select__placeholder.is-transparent))) {
+  background-color: rgba(30, 189, 208, 0.4) !important;
+  border-color: #00ffff !important; 
+  box-shadow: 0 0 8px rgba(30, 189, 208, 0.6) !important; 
+}
+
+
 .card4-bottom-select-item :deep(.el-select__selected-item) {
   color: #ffffff !important;
   font-family: "YRDZST", sans-serif !important;
@@ -1461,8 +1468,8 @@ const handleDispatchExecution = () => {
   font-weight: 600;
 }
 
-.card4-bottom-select-item :deep(.el-select__placeholder) {
-  color: #dab6b6 !important;
+.card4-bottom-select-item :deep(.el-select__placeholder.is-transparent) {
+  color: #a8abb2 !important;
 }
 
 .card4-bottom-top-btn-container {

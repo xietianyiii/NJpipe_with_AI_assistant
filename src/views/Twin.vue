@@ -163,6 +163,7 @@ import {
   setPipelineHighlight,
   setPipelineVisible,
   setPipeLiquidLevel,
+  setPipeFlowState,
 } from "@/utils/CreatePipeline";
 import { updateCamera } from "@/utils/updateCamera";
 // 导入面板组件（移除文件扩展名以改进模块解析）
@@ -706,11 +707,16 @@ async function handleSmartDispatchClicked() {
 }
 
 async function handleDispatchPlanClicked() {
-  console.log("🚀 选择了调度方案");
   const position: [number, number, number] = [
+    120.97479270189582, 31.39091652499695, 5335.463844791039,
+  ];
+  const rotation = { pitch: -85.71633911132812, yaw: -92.71320343017578 };
+  await updateCamera(App, position, rotation, 2);
+  console.log("🚀 选择了调度方案");
+  const position0: [number, number, number] = [
     120.97446402485654, 31.393557743050675, 0,
   ];
-  await createCircleRange(App, position, 2300);
+  await createCircleRange(App, position0, 2300);
 
   await createMultiMovePath(App, path0, "#32CD32", "scan_line");
   await createMultiMovePath(App, path1, "#00FFFF", "scan_line");
@@ -877,10 +883,23 @@ async function handlePipeVisibilityToggled(visible: boolean) {
 }
 
 async function handleLiquidlevelClicked(
+  pipeType: string,
   pipeLiquidLevel: number,
   color: string
 ) {
   await setPipeLiquidLevel(App, pipeLiquidLevel, color);
+}
+
+async function handleFlowdirectionClicked(
+  direction: string,
+  style: string,
+  color: string
+) {
+  await setPipeFlowState(App, parseInt(direction), parseInt(style), color, true);
+}
+
+async function handleResetFlowdirectionClicked() {
+  await setPipeFlowState(App, 0, 0, "#000000", false);
 }
 
 function classifyRainStation(stationType: string, selected: string[]) {

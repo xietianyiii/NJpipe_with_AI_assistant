@@ -946,8 +946,9 @@
               class="light-select"
               size="small"
             >
-              <el-option label="样式1" value="flowStyle1" />
-              <el-option label="样式2" value="flowStyle2" />
+              <el-option label="样式1" value="0" />
+              <el-option label="样式2" value="1" />
+              <el-option label="样式3" value="2" />
             </el-select>
           </div>
 
@@ -1018,7 +1019,7 @@ const lightColor = ref("");
 const liquidPipeType = ref("rain_pipe");
 const liquidLevel = ref(50);
 const liquidColor = ref("");
-const flowStyle = ref("flowStyle1");
+const flowStyle = ref("0");
 const flowDirection = ref("forward");
 const flowColor = ref("");
 
@@ -1076,8 +1077,8 @@ const emit = defineEmits<{
   (e: "pipevisibilityToggled", visible: boolean): void;
   (
     e: "flowdirectionClicked",
-    style: string,
     direction: string,
+    style: string,
     color: string
   ): void;
   (e: "resetflowdirectionClicked"): void;
@@ -1132,8 +1133,8 @@ const handleResetLiquidLevel = () => {
 const handleFlowDirection = () => {
   emit(
     "flowdirectionClicked",
-    flowStyle.value,
     flowDirection.value,
+    flowStyle.value,
     flowColor.value
   );
 };

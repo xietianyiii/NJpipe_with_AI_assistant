@@ -270,7 +270,7 @@ export async function setPipeLiquidLevel(
                 eid: pipelineCache.pipeline.eid,
                 fIds: [],
                 pipeLiquidLevel: pipeLiquidLevel,
-                pipeLiquidLevels: pipeLiquidLevels || [],
+                pipeLiquidLevels: pipeLiquidLevels,
                 color: color,
                 isOpen: true,
                 isFlow: true,
@@ -291,6 +291,66 @@ export async function setPipeLiquidLevel(
     }
 }
 
+
+/**
+ * 设置管网流向
+ * @param App - WDP 实例
+ * @param pipeFlowdirction - 管网流向（单位：米）
+ * @param pipeFlowStyle - 管网流向样式（0,1,2）
+ * @param color - 颜色
+ * @param visible - 是否显示（true = 显示，false = 隐藏）
+ * @param fIds - 管网fids数组（"fid"为各构件要素的唯一标识ID，可选）
+ */
+export async function setPipeFlowState(
+    App: any,
+    pipeFlowdirction: number,
+    pipeFlowStyle: number,
+    color: string,
+    visible: boolean,
+    fIds?: number[],
+): Promise<void> {
+    if (!App) {
+        console.warn("⚠️ App 实例无效");
+        return;
+    }
+
+    if (!pipelineCache.pipeline) {
+        console.warn("⚠️ 尚未创建管网，请先调用 createPipeline()");
+        return;
+    }
+
+    try {
+        console.log(`👁️ 正在设置管网流向为 ${pipeFlowdirction} 米, 颜色为${color}...`);
+
+        const jsondata = {
+            "apiClassName": "WimPipeAPI",
+            "apiFuncName": "SetPipeFlowState",
+            "args":
+            {
+                "guid": "",  //为空即可
+                "eid": "",
+                "visible": visible,
+                "fIds": fIds,
+                "flow": pipeFlowdirction,
+                "type": pipeFlowStyle,
+                "color": color,
+                "reset": false
+            }
+        }
+
+        const res = await App.Customize.RunCustomizeApi(jsondata);
+
+        if (res.success) {
+            console.log(
+                `✅ 管网流向设置成功: ${pipeFlowdirction} 米, 颜色为${color} (${fIds?.length ? fIds.join(", ") : "全部类型"})`
+            );
+        } else {
+            console.error("❌ 管网流向设置失败:", res);
+        }
+    } catch (error) {
+        console.error("🚨 setPipeFlowState 执行出错:", error);
+    }
+}
 
 /**
  * 获取当前缓存的管网对象（如果需要直接访问）
