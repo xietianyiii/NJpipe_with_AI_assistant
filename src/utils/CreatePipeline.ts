@@ -320,7 +320,7 @@ export async function setPipeFlowState(
     }
 
     try {
-        console.log(`👁️ 正在设置管网流向为 ${pipeFlowdirction} 米, 颜色为${color}...`);
+        console.log(`👁️ 正在设置管网流向为 ${pipeFlowdirction} ,样式为${pipeFlowStyle}, 颜色为${color}..., 显示为${visible}`);
 
         const jsondata = {
             "apiClassName": "WimPipeAPI",
@@ -328,7 +328,7 @@ export async function setPipeFlowState(
             "args":
             {
                 "guid": "",  //为空即可
-                "eid": "",
+                "eid": pipelineCache.pipeline.eid,
                 "visible": visible,
                 "fIds": fIds,
                 "flow": pipeFlowdirction,
@@ -342,7 +342,7 @@ export async function setPipeFlowState(
 
         if (res.success) {
             console.log(
-                `✅ 管网流向设置成功: ${pipeFlowdirction} 米, 颜色为${color} (${fIds?.length ? fIds.join(", ") : "全部类型"})`
+                `✅ 管网流向设置成功: ${pipeFlowdirction} ,样式为${pipeFlowStyle}, 颜色为${color}..., 显示为${visible} (${fIds?.length ? fIds.join(", ") : "全部类型"})`
             );
         } else {
             console.error("❌ 管网流向设置失败:", res);

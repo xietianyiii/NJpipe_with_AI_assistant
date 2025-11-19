@@ -55,9 +55,11 @@
         v-else-if="activePanel === 'sim'"
         :is-sim-card4-close-button-visible="isSimCard4CloseButtonVisible"
         @update:isSimCard4CloseButtonVisible="handleSimCard4Visible"
+        @onRoadIconClick="handleOnRoadIconClick"
         @create-poi="handleCreateFloodPumpCar"
         @delete-poi="handleDeleteFloodPumpCar"
         @onDispatchPlanClicked="handleDispatchPlanClicked"
+        @downDispatchPlanClicked="handleDownDispatchPlanClicked"
         @onSmartDispatchClicked="handleSmartDispatchClicked"
         @onDispatchExecutionClicked="handleDispatchExecutionClicked"
       />
@@ -126,7 +128,10 @@ import {
   watch,
 } from "vue";
 import { useRoute } from "vue-router";
-import { createCircleRange } from "@/utils/CreateCircleRange";
+import {
+  createCircleRange,
+  setCircleRangeVisible,
+} from "@/utils/CreateCircleRange";
 import WdpApi from "wdpapi";
 import WimApi from "@wdp-api/wim-api";
 import { InundationGenerator } from "@/utils/Inund_Gen";
@@ -189,6 +194,8 @@ const shpAreaRegistry = ref<string[]>([]);
 
 let App = null;
 let inundationGenerator = null;
+let vehicleDirection: "forward" | "backward" = "forward";
+
 const loading = ref(true);
 const loadingText = ref("场景初始化中...");
 
@@ -347,6 +354,30 @@ function registerRenderEvents() {
       func: function (res) {
         loadingText.value = "渲染中断，请刷新重试。";
         loading.value = true;
+      },
+    },
+  ]);
+
+  App.Renderer.RegisterSceneEvent([
+    {
+      name: "OnMoveAlongPathEndEvent",
+      func: async function (res) {
+        console.log("🚗💨 覆盖物路径移动结束：", res);
+
+        if (vehicleDirection === "forward") {
+          await onArriveWaterPoint(); // 到达 B
+        } else {
+          await onArriveBackStart(); // 返回 A
+        }
+      },
+    },
+    {
+      name: "OnWdpSceneIsReady",
+      func: async function (res) {
+        // { "event_name": "OnWdpSceneIsReady", "result": { "progress": 100 } }
+        if (res.result.progress === 100) {
+          // 场景加载完成
+        }
       },
     },
   ]);
@@ -561,6 +592,19 @@ async function handleWaterLoggingRowClick(data: any) {
   }
 }
 
+async function handleOnRoadIconClick() {
+  console.log("🚀 点击了道路图标");
+  const position: [number, number, number] = [
+    120.97434812649193, 31.394157759000386, 17.865765614339704,
+  ];
+  const rotation = { pitch: -8.252985000610352, yaw: 79.7743911743164 };
+  await updateCamera(App, position, rotation, 2);
+  await createAndRunInundation(
+    App,
+    "http://10.100.10.124:8090/inundation/config/Water_point_grid.json"
+  );
+}
+
 async function handleCreateFloodPumpCar() {
   const position: [number, number, number] = [
     120.97479270189582, 31.39091652499695, 5335.463844791039,
@@ -629,13 +673,13 @@ async function handleCreateFloodPumpCar() {
 }
 
 const path0: [number, number, number][] = [
-  [120.97845399909673, 31.3905175224146, 15],
-  [120.97844266469784, 31.390569781567343, 15],
-  [120.97476665448261, 31.39047151625851, 15],
-  [120.97474750842821, 31.39074616850237, 15],
-  [120.97459758080467, 31.39104486412353, 15],
-  [120.97450811392741, 31.393439415479705, 15],
-  [120.97446410197324, 31.39356135563207, 15],
+  [120.97845399909673, 31.3905175224146, 500],
+  [120.97844266469784, 31.390569781567343, 500],
+  [120.97476665448261, 31.39047151625851, 500],
+  [120.97474750842821, 31.39074616850237, 500],
+  [120.97459758080467, 31.39104486412353, 500],
+  [120.97450811392741, 31.393439415479705, 500],
+  [120.97446410197324, 31.39356135563207, 500],
 ];
 
 async function handleDeleteFloodPumpCar() {
@@ -716,7 +760,7 @@ async function handleDispatchPlanClicked() {
   const position0: [number, number, number] = [
     120.97446402485654, 31.393557743050675, 0,
   ];
-  await createCircleRange(App, position0, 2300);
+  await createCircleRange(App, position0, 2300, true);
 
   await createMultiMovePath(App, path0, "#32CD32", "scan_line");
   await createMultiMovePath(App, path1, "#00FFFF", "scan_line");
@@ -728,6 +772,15 @@ async function handleDispatchPlanClicked() {
   await createMoveVehicle(App, path0[0]);
 }
 
+async function handleDownDispatchPlanClicked() {
+  console.log("🚀 取消了调度方案");
+  await deleteInundationAlgorithm();
+  await deleteVehicle(App);
+  await deleteAllMovePaths(App);
+  await deleteMovePath(App);
+  await setCircleRangeVisible(false);
+}
+
 async function handleDispatchExecutionClicked() {
   const position: [number, number, number] = [
     120.97595042775713, 31.390777623763363, 905.1810781739052,
@@ -736,15 +789,26 @@ async function handleDispatchExecutionClicked() {
   await updateCamera(App, position, rotation, 2);
   await deleteAllMovePaths(App);
 
+  vehicleDirection = "forward";
   await createMovePath(App, path0, "#32CD32", "scan_line");
   await createMoveVehicle(App, path0[0]);
-  await startVehicleMove(App, undefined, undefined, 10, false, "play");
+  await startVehicleMove(App, undefined, undefined, 5, false, "play");
+}
 
+async function onArriveWaterPoint() {
+  console.log("🚗💨 到达水体点");
   setTimeout(async () => {
     await createMovePath(App, path0, "#32CD32", "scan_line");
     await createMoveVehicle(App, path0[0]);
-    await startVehicleMove(App, undefined, undefined, 10, true, "play");
-  }, 12000);
+    await startVehicleMove(App, undefined, undefined, 5, true, "play");
+  }, 1200);
+  vehicleDirection = "backward";
+}
+
+async function onArriveBackStart() {
+  console.log("🚗💨 返回起始点");
+  await deleteVehicle(App);
+  await deleteMovePath(App);
 }
 
 async function handleCreateEqualRain() {
@@ -856,6 +920,7 @@ async function handleDigCutClicked() {
 
 async function handleResetDigCutClicked() {
   await endDigTerrainAnalysis(App);
+  await endPickPoint(App);
 }
 
 async function handlePipeliftClicked(height: string) {
@@ -895,7 +960,13 @@ async function handleFlowdirectionClicked(
   style: string,
   color: string
 ) {
-  await setPipeFlowState(App, parseInt(direction), parseInt(style), color, true);
+  await setPipeFlowState(
+    App,
+    parseInt(direction),
+    parseInt(style),
+    color,
+    true
+  );
 }
 
 async function handleResetFlowdirectionClicked() {

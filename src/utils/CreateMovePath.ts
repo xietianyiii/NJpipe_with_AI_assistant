@@ -54,7 +54,7 @@ export async function createMovePath(
         });
 
         const { success } = await App.Scene.Add(path, {
-            calculateCoordZ: { coordZRef: "ground", coordZOffset: 7 },
+            calculateCoordZ: { coordZRef: "altitude", coordZOffset: 50 },
         });
 
         if (success) {

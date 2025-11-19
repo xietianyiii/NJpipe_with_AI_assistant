@@ -71,6 +71,12 @@ export async function createAndRunInundation(App: any, configPath: string): Prom
       console.log("🧩 淹没算法创建成功:", inundationAlgo.eid);
     }
 
+    function sleep(ms: number) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    await sleep(500);
+    
     // 5️⃣ 运行淹没算法
     const runRes = await inundationAlgo.RunAlgorithm({
       offset: [0, 0, 0],

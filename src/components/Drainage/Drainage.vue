@@ -961,8 +961,8 @@
               class="light-select"
               size="small"
             >
-              <el-option label="正向" value="forward" />
-              <el-option label="反向" value="backward" />
+              <el-option label="正向" value="1" />
+              <el-option label="反向" value="0" />
             </el-select>
             <el-color-picker
               v-model="flowColor"
@@ -1020,7 +1020,7 @@ const liquidPipeType = ref("rain_pipe");
 const liquidLevel = ref(50);
 const liquidColor = ref("");
 const flowStyle = ref("0");
-const flowDirection = ref("forward");
+const flowDirection = ref("1");
 const flowColor = ref("");
 
 const activeToolIndex = ref<number | null>(null);

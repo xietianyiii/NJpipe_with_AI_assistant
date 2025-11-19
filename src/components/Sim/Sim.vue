@@ -67,7 +67,7 @@
 
               <div class="card3-row2-content">
                 <div class="card3-left-content">
-                  <div class="card3-svg-container">
+                  <div class="card3-svg-container"  @click="handleRoadIconClick">
                     <svg
                       t="1760492183499"
                       class="icon"
@@ -449,7 +449,14 @@
                   <div class="card4-bottom-bottom-btn-container">
                     <button
                       class="card4-bottom-bottom-btn"
+                      :class="{ active: dispatchPlanActive }"
                       @click="handleDispatchPlan"
+                      :disabled="
+                        !priorityValue ||
+                        !managementUnit ||
+                        pumpCategory.length === 0 ||
+                        pumpStatus.length === 0
+                      "
                     >
                       <svg
                         t="1760586345338"
@@ -472,6 +479,7 @@
                     <button
                       class="card4-bottom-bottom-btn"
                       @click="handleDispatchExecution"
+                      :disabled="!dispatchPlanActive"
                     >
                       调度执行
                       <svg
@@ -516,7 +524,9 @@ const emit = defineEmits<{
   (e: "delete-poi"): void;
   (e: "onSmartDispatchClicked"): void;
   (e: "onDispatchPlanClicked"): void;
+  (e: "downDispatchPlanClicked"): void;
   (e: "onDispatchExecutionClicked"): void;
+  (e: "onRoadIconClick"): void;
   (e: "update:isSimCard4CloseButtonVisible", value: boolean): void;
 }>();
 
@@ -529,21 +539,42 @@ const props = defineProps({
 
 // 按钮激活状态管理
 const activeButton = ref<"smart" | "manual" | null>(null);
+const dispatchPlanActive = ref(false);
 
 const handleButtonClick = (type: string) => {
   if (type === "smart") {
-    activeButton.value = "smart";
-    priorityValue.value = "priority1";
-    managementUnit.value = "unit1";
-    pumpCategory.value = ["pumpcateg1", "pumpcateg2"];
-    pumpStatus.value = ["pumpstat1", "pumpstat2", "pumpstat3", "pumpstat4"];
-    emit("onSmartDispatchClicked");
+    // 如果智能调度已经激活，则取消激活
+    if (activeButton.value === "smart") {
+      activeButton.value = null;
+      priorityValue.value = "";
+      managementUnit.value = "";
+      pumpCategory.value = [];
+      pumpStatus.value = [];
+    } else {
+      // 激活智能调度
+      activeButton.value = "smart";
+      priorityValue.value = "priority1";
+      managementUnit.value = "unit1";
+      pumpCategory.value = ["pumpcateg1", "pumpcateg2"];
+      pumpStatus.value = ["pumpstat1", "pumpstat2", "pumpstat3", "pumpstat4"];
+      emit("onSmartDispatchClicked");
+    }
   } else if (type === "manual") {
-    activeButton.value = "manual";
-    priorityValue.value = "";
-    managementUnit.value = "";
-    pumpCategory.value = [];
-    pumpStatus.value = [];
+    // 如果手动调度已经激活，则取消激活
+    if (activeButton.value === "manual") {
+      activeButton.value = null;
+      priorityValue.value = "";
+      managementUnit.value = "";
+      pumpCategory.value = [];
+      pumpStatus.value = [];
+    } else {
+      // 激活手动调度
+      activeButton.value = "manual";
+      priorityValue.value = "";
+      managementUnit.value = "";
+      pumpCategory.value = [];
+      pumpStatus.value = [];
+    }
   }
 };
 
@@ -627,6 +658,10 @@ function onCloseCard4() {
   emit("delete-poi");
 }
 
+function handleRoadIconClick() {
+  emit("onRoadIconClick");
+}
+
 // 监听泵车类别选择变化
 watch(pumpCategory, (val) => {
   if (val.length === 0) {
@@ -675,8 +710,17 @@ const handlePumpStatusCheckAll = (val: CheckboxValueType) => {
 
 // 调度方案按钮点击处理
 const handleDispatchPlan = () => {
-  emit("onDispatchPlanClicked");
-  // 这里可以添加调度方案的具体逻辑
+  // 切换激活状态
+  dispatchPlanActive.value = !dispatchPlanActive.value;
+
+  if (dispatchPlanActive.value) {
+    // 激活状态
+    emit("onDispatchPlanClicked");
+  } else {
+    // 取消激活状态
+    emit("downDispatchPlanClicked");
+    console.log("调度方案取消激活");
+  }
 };
 
 // 调度执行按钮点击处理
@@ -1051,6 +1095,16 @@ const handleDispatchExecution = () => {
   transform: scale(1.1);
   transition: all 0.3s ease;
   box-shadow: 0 0 10px rgba(26, 218, 106, 0.5);
+}
+
+.card3-left-content .card3-svg-container {
+  cursor: pointer;
+}
+
+.card3-left-content:active .card3-svg-container {
+  background-color: #5a9bbf;
+  transform: scale(0.95);
+  transition: all 0.1s ease;
 }
 
 /* card3-label-container 上下排列 */
@@ -1454,12 +1508,12 @@ const handleDispatchExecution = () => {
   background-color: rgba(128, 136, 211, 0.8) !important;
 }
 
-.card4-bottom-select-item :deep(.el-select__wrapper:not(:has(.el-select__placeholder.is-transparent))) {
+.card4-bottom-select-item
+  :deep(.el-select__wrapper:not(:has(.el-select__placeholder.is-transparent))) {
   background-color: rgba(30, 189, 208, 0.4) !important;
-  border-color: #00ffff !important; 
-  box-shadow: 0 0 8px rgba(30, 189, 208, 0.6) !important; 
+  border-color: #00ffff !important;
+  box-shadow: 0 0 8px rgba(30, 189, 208, 0.6) !important;
 }
-
 
 .card4-bottom-select-item :deep(.el-select__selected-item) {
   color: #ffffff !important;
@@ -1509,7 +1563,7 @@ const handleDispatchExecution = () => {
 
 .card4-bottom-bottom-btn {
   background-color: rgba(79, 99, 113, 0.7);
-  color: rgb(216, 190, 190);
+  color: rgb(255, 255, 255);
   border: 1px solid #1ebdd0;
   border-radius: 4px;
   padding: 4px 16px;
@@ -1524,7 +1578,7 @@ const handleDispatchExecution = () => {
 }
 
 .card4-bottom-bottom-btn:hover {
-  background-color: rgba(136, 199, 35, 0.7);
+  background-color: rgba(54, 147, 201, 0.7);
   box-shadow: 0 0 8px rgba(30, 189, 208, 0.8);
   color: white;
 }
@@ -1536,6 +1590,14 @@ const handleDispatchExecution = () => {
 .card4-bottom-bottom-btn:active {
   background-color: rgba(116, 219, 56, 0.9);
   box-shadow: 0 0 12px rgba(25, 150, 170, 1);
+}
+
+.card4-bottom-bottom-btn:disabled {
+  background-color: rgba(79, 99, 113, 0.3);
+  border-color: #5f7a8a;
+  color: #aaa;
+  cursor: not-allowed;
+  box-shadow: none;
 }
 
 .card4-item-top-btn:hover {
@@ -1559,6 +1621,16 @@ const handleDispatchExecution = () => {
   transform: translateY(1px);
   border-color: #00ffff;
 }
+
+/* 调度方案按钮激活状态样式 */
+.card4-bottom-bottom-btn.active {
+  background-color: rgba(34, 181, 197, 0.9);
+  box-shadow: 0 0 12px rgba(30, 189, 208, 1);
+  transform: translateY(1px);
+  border-color: #00ffff;
+  color: white;
+}
+
 .top-menu-container {
   position: absolute;
   top: 80%;

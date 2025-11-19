@@ -23,7 +23,7 @@ export async function updateCamera(
       rotation: rotation,
       pitchLimit: [-90, 0],
       yawLimit: [-180, 180],
-      viewDistanceLimit: [10, 40000],
+      viewDistanceLimit: [0, 40000],
       fieldOfView: 90,
       controlMode: "RTS", // RTS 飞行模式
       flyTime, // 过渡时长
