@@ -65,6 +65,9 @@
       />
     </div>
 
+    <!-- Menu -->
+    <Menu />
+
     <!-- Legend Card -->
     <LegendCard
       v-show="showLegendCard"
@@ -175,6 +178,7 @@ import { updateCamera } from "@/utils/updateCamera";
 import DrainagePanel from "@/components/Drainage";
 import MoniPanel from "@/components/Moni";
 import SimPanel from "@/components/Sim";
+import Menu from "@/components/Menu";
 import { setStationVisibility } from "@/utils/setStationVisibility";
 const LegendCard = defineAsyncComponent(
   () => import("@/components/Twin/legend-card.vue")
