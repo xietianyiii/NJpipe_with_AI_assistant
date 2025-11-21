@@ -720,7 +720,8 @@ function closePopup() {
 }
 
 .popup-body {
-  font-family: "SHJGSK";
+  font-family: "YRDZST";
+  font-weight: 600;
   color: #ffffff;
   animation: contentFadeIn 0.3s ease-out 0.2s both;
 }

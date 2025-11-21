@@ -1,10 +1,9 @@
-import HeatmapConfig from "E:/VScode/Urban-flood/urban-pipe-flood/src/configs/Heatmap_Gen.json";
-
 // 创建缓存对象来存储已创建的热力映射组件
 const heatmapCache = {
   colorCard: null as any,
   material: null as any,
-  algorithm: null as any
+  algorithm: null as any,
+  lastConfigUrl: ""  // 👉 记录上一次使用的配置文件路径
 };
 
 /**
@@ -15,8 +14,9 @@ const heatmapCache = {
  * 3️⃣ 创建热力映射算法
  * 4️⃣ 运行算法
  * @param App - WDP 实例
+ * @param configPath - 配置文件地址（JSON）
  */
-export async function createAndRunHeatmap(App: any): Promise<void> {
+export async function createAndRunHeatmap(App: any, configPath: string): Promise<void> {
   if (!App) {
     console.warn("⚠️ App 实例无效，无法创建热力映射");
     return;
@@ -24,6 +24,16 @@ export async function createAndRunHeatmap(App: any): Promise<void> {
 
   try {
     console.log("🔥 开始创建热力映射...");
+
+    // 0️⃣ 检查配置地址是否变化
+    if (heatmapCache.lastConfigUrl && heatmapCache.lastConfigUrl !== configPath) {
+      console.log("🔁 检测到新的配置文件地址，清除缓存并重新创建算法");
+      await deleteHeatmapAlgorithm(false);
+      heatmapCache.colorCard = null;
+      heatmapCache.material = null;
+      heatmapCache.algorithm = null;
+    }
+    heatmapCache.lastConfigUrl = configPath;
 
     // 1️⃣ 检查缓存或创建色卡
     let colorCard;
@@ -75,14 +85,20 @@ export async function createAndRunHeatmap(App: any): Promise<void> {
       console.log("🧱 热力材质创建成功:", materialObj.eid);
     }
 
-    // 3️⃣ 检查缓存或创建热力映射算法
+    // 3️⃣ 加载配置 JSON（根据 configPath 动态加载）
+    console.log("📄 正在加载热力配置:", configPath);
+    const response = await fetch(configPath);
+    if (!response.ok) throw new Error(`❌ 无法加载配置文件: ${response.statusText}`);
+    const heatmapConfig = await response.json();
+    if (!heatmapConfig) throw new Error("❌ 配置文件内容为空");
+
+    // 4️⃣ 检查缓存或创建热力映射算法
     let heatmapAlgo;
     if (heatmapCache.algorithm) {
       console.log("🧩 使用缓存的热力算法:", heatmapCache.algorithm.eid);
       heatmapAlgo = heatmapCache.algorithm;
     } else {
-      const algoConfig = HeatmapConfig;
-      const algorithmRes = await App.WIM.Flood.CreateAlgorithm(algoConfig);
+      const algorithmRes = await App.WIM.Flood.CreateAlgorithm(heatmapConfig);
 
       if (!algorithmRes.success) throw new Error("❌ 创建热力映射算法失败");
       heatmapAlgo = algorithmRes.result.object;
@@ -90,13 +106,19 @@ export async function createAndRunHeatmap(App: any): Promise<void> {
       console.log("🧩 热力算法创建成功:", heatmapAlgo.eid);
     }
 
-    // 4️⃣ 运行热力映射算法
+    function sleep(ms: number) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    await sleep(5000);
+
+    // 5️⃣ 运行热力映射算法
     const runRes = await heatmapAlgo.RunAlgorithm({
       offset: [0, 0, 0],
       scale: [1, 1],
       rotation: 0,
-      materialEId: materialObj.eid, // 材质EID
-      colorPointEId: colorCard.eid, // 色卡EID
+      materialEId: materialObj.eid,
+      colorPointEId: colorCard.eid,
       index: 1,
       minIndex: 0,
       maxIndex: 0,
@@ -124,9 +146,10 @@ export async function deleteHeatmapAlgorithm(force: boolean = true): Promise<voi
     const res = await heatmapCache.algorithm.DeleteAlgorithm({ force });
     console.log("✅ 删除结果:", res);
 
-    // 删除后清除缓存
     heatmapCache.algorithm = null;
-    heatmapCache.material = null;
+    // heatmapCache.material = null;
+    // heatmapCache.colorCard = null;
+
     console.log("🧹 缓存已清除");
   } catch (error) {
     console.error("🚨 删除热力映射算法出错:", error);
@@ -140,5 +163,6 @@ export function clearHeatmapCache(): void {
   heatmapCache.colorCard = null;
   heatmapCache.material = null;
   heatmapCache.algorithm = null;
+  heatmapCache.lastConfigUrl = "";
   console.log("🧹 热力映射缓存已清除");
 }

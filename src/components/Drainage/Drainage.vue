@@ -808,7 +808,11 @@
       </div>
 
       <!-- 7 -->
-      <div class="tool-item" :class="{ active: activeToolIndex === 6 }">
+      <div
+        class="tool-item"
+        :class="{ active: activeToolIndex === 6 }"
+        @click="() => handleToolClick(6)"
+      >
         <svg
           t="1760319833728"
           class="icon"
@@ -851,14 +855,29 @@
         </div>
 
         <div v-if="activeToolIndex === 1" class="elevation-box">
-          <label class="light-label">高度：</label>
-          <el-input-number
-            class="elevation-input"
-            v-model="elevationValue"
-            :precision="2"
-            :step="1"
-            size="small"
-          />
+          <div class="light-row">
+            <label class="light-label">管网类型：</label>
+            <el-select
+              v-model="hightPieType"
+              placeholder="请选择管网类型"
+              class="light-select"
+              size="small"
+            >
+              <el-option label="雨水管" value="rain" />
+              <el-option label="污水管" value="sewage" />
+            </el-select>
+          </div>
+
+          <div class="light-row">
+            <label class="light-label">高度：</label>
+            <el-input-number
+              class="elevation-input"
+              v-model="elevationValue"
+              :precision="2"
+              :step="1"
+              size="small"
+            />
+          </div>
         </div>
 
         <div v-if="activeToolIndex === 2" class="light-box">
@@ -871,8 +890,8 @@
               class="light-select"
               size="small"
             >
-              <el-option label="雨水管" value="rain_pipe" />
-              <el-option label="污水管" value="sewage_pipe" />
+              <el-option label="雨水管" value="rain" />
+              <el-option label="污水管" value="sewage" />
             </el-select>
           </div>
 
@@ -911,8 +930,8 @@
               class="light-select"
               size="small"
             >
-              <el-option label="雨水管" value="rain_pipe" />
-              <el-option label="污水管" value="sewage_pipe" />
+              <el-option label="雨水管" value="rain" />
+              <el-option label="污水管" value="sewage" />
             </el-select>
           </div>
 
@@ -937,6 +956,19 @@
         </div>
 
         <div v-if="activeToolIndex === 5" class="light-box">
+          <!-- 第0行：类型选择器 -->
+          <div class="light-row">
+            <label class="light-label">管网类型：</label>
+            <el-select
+              v-model="flowPieType"
+              placeholder="请选择管网类型"
+              class="light-select"
+              size="small"
+            >
+              <el-option label="雨水管" value="rain" />
+              <el-option label="污水管" value="sewage" />
+            </el-select>
+          </div>
           <!-- 第1行：模式选择器 -->
           <div class="light-row">
             <label class="light-label">流向样式：</label>
@@ -1012,13 +1044,15 @@
 import { ref, onMounted, onBeforeUnmount, watch, computed } from "vue";
 import { ElMessage } from "element-plus";
 
+const hightPieType = ref("rain");
 const elevationValue = ref("200");
-const lightPieType = ref("rain_pipe");
+const lightPieType = ref("rain");
 const lightIntensity = ref(50);
 const lightColor = ref("");
-const liquidPipeType = ref("rain_pipe");
+const liquidPipeType = ref("rain");
 const liquidLevel = ref(50);
 const liquidColor = ref("");
+const flowPieType = ref("rain");
 const flowStyle = ref("0");
 const flowDirection = ref("1");
 const flowColor = ref("");
@@ -1029,7 +1063,7 @@ const toolActions = [
   // 对应第 0 个图标：显示“剖切”和“重置”
   [
     { label: "剖切", action: () => handleDigCut() },
-    { label: "重置", action: () => handleResetDigCut() },
+    { label: "关闭", action: () => handleResetDigCut() },
   ],
   // 对应第 1 个图标：显示“抬升”和“重置”
   [
@@ -1051,6 +1085,10 @@ const toolActions = [
     { label: "流向", action: () => handleFlowDirection() },
     { label: "重置", action: () => handleResetFlowDirection() },
   ],
+  [
+    { label: "冒溢", action: () => handleSpeEffect() },
+    { label: "重置", action: () => handleResetSpeEffect() },
+  ],
 ];
 
 // 定义事件，用于更新父组件中的状态
@@ -1068,7 +1106,7 @@ const emit = defineEmits<{
   (e: "digClicked"): void;
   (e: "digcutClicked"): void;
   (e: "resetdigcutClicked"): void;
-  (e: "pipeliftClicked", height: string): void;
+  (e: "pipeliftClicked", type: string, height: string): void;
   (e: "resetpipeliftClicked"): void;
   (e: "pipelightClicked", type: string, intensity: number, color: string): void;
   (e: "resetpipelightClicked"): void;
@@ -1077,11 +1115,14 @@ const emit = defineEmits<{
   (e: "pipevisibilityToggled", visible: boolean): void;
   (
     e: "flowdirectionClicked",
+    type: string,
     direction: string,
     style: string,
     color: string
   ): void;
   (e: "resetflowdirectionClicked"): void;
+  (e: "pipSpeEffectClicked"): void;
+  (e: "resetSpeEffectClicked"): void;
   (
     e: "dra-defect-row-click",
     defect: { id: string; location: string; name: string }
@@ -1097,7 +1138,7 @@ const handleResetDigCut = () => {
 };
 
 const handleLift = () => {
-  emit("pipeliftClicked", elevationValue.value);
+  emit("pipeliftClicked", hightPieType.value, elevationValue.value);
 };
 
 const handleResetElevation = () => {
@@ -1133,6 +1174,7 @@ const handleResetLiquidLevel = () => {
 const handleFlowDirection = () => {
   emit(
     "flowdirectionClicked",
+    flowPieType.value,
     flowDirection.value,
     flowStyle.value,
     flowColor.value
@@ -1141,6 +1183,14 @@ const handleFlowDirection = () => {
 
 const handleResetFlowDirection = () => {
   emit("resetflowdirectionClicked");
+};
+
+const handleSpeEffect = () => {
+  emit("pipSpeEffectClicked");
+};
+
+const handleResetSpeEffect = () => {
+  emit("resetSpeEffectClicked");
 };
 
 const handleToolClick = (index: number) => {
@@ -2754,6 +2804,7 @@ onMounted(() => {
   border-radius: 8px;
   border: 1px solid #4aadce;
   box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.3);
+  max-height: 82px;
 }
 
 .light-row {
@@ -2784,13 +2835,6 @@ onMounted(() => {
   border-radius: 8px;
   border: 1px solid #4aadce;
   box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.3);
-}
-
-.elevation-box {
-  display: flex;
-  justify-content: row;
-  align-items: center;
-  height: 32px;
 }
 
 .tool-action-btn {
@@ -2825,7 +2869,7 @@ onMounted(() => {
 }
 
 :deep(.elevation-input) {
-  width: 110px;
+  width: 150px;
   height: 32px;
 }
 

@@ -37,6 +37,8 @@
         @flowdirectionClicked="handleFlowdirectionClicked"
         @resetflowdirectionClicked="handleResetFlowdirectionClicked"
         @pipevisibilityToggled="handlePipeVisibilityToggled"
+        @pipSpeEffectClicked="handlePipSpeEffectClicked"
+        @resetSpeEffectClicked="handleResetSpeEffectClicked"
       />
       <MoniPanel
         v-else-if="activePanel === 'moni'"
@@ -66,7 +68,10 @@
     </div>
 
     <!-- Menu -->
-    <Menu />
+    <Menu
+      @menu-inundation-execute-plan="handleMenuInundationExecutePlan"
+      @menu-inundation-reset-plan="handleMenuInundationClear"
+    />
 
     <!-- Legend Card -->
     <LegendCard
@@ -88,7 +93,7 @@
 
     <!-- 水体生成控制按钮 -->
     <div class="inundation-controls">
-      <button
+      <!-- <button
         class="control-btn generate-btn"
         :class="{ loading: isLoading }"
         @click="generateInundation"
@@ -100,8 +105,7 @@
 
       <button class="control-btn clear-btn" @click="clearInundation">
         清除水体
-      </button>
-
+      </button> -->
       <button
         class="control-btn material-btn"
         :class="{ loading: isLoading }"
@@ -109,7 +113,6 @@
         :disabled="isLoading"
       >
         <span v-if="!isLoading">更新相机</span>
-        <span v-else>创建中...</span>
       </button>
     </div>
 
@@ -142,7 +145,10 @@ import { createPois } from "@/utils/createPois";
 import { handleDeleteAllPois } from "@/utils/deletePois";
 import { createShpArea } from "@/utils/createShpArea";
 import { deleteShpArea } from "@/utils/deleteShpArea";
-import { createAndRunHeatmap } from "@/utils/CreateHeatmap";
+import {
+  createAndRunHeatmap,
+  deleteHeatmapAlgorithm,
+} from "@/utils/CreateHeatmap";
 import {
   createMovePath,
   createMultiMovePath,
@@ -173,6 +179,8 @@ import {
   setPipeLiquidLevel,
   setPipeFlowState,
 } from "@/utils/CreatePipeline";
+import { createEffect, deleteEffect } from "@/utils/CreateSpecialEffect";
+import { setEntityCustomId, setEntityVisible } from "@/utils/SetEidEntity";
 import { updateCamera } from "@/utils/updateCamera";
 // 导入面板组件（移除文件扩展名以改进模块解析）
 import DrainagePanel from "@/components/Drainage";
@@ -822,7 +830,10 @@ async function handleCreateEqualRain() {
   const rotation = { pitch: -83.52790832519531, yaw: -89.51040649414062 };
   await updateCamera(App, position, rotation, 2);
 
-  await createAndRunHeatmap(App);
+  await createAndRunHeatmap(
+    App,
+    "http://10.100.10.124:8090/inundation/config/Heatmap_Gen.json"
+  );
 }
 
 async function handleCreateSewageTP() {
@@ -876,20 +887,60 @@ async function handleCreatePipeline() {
 
   await createPipeline(
     App,
-    "//10.66.12.53/x.public/exchange/TMP_THJ/WIM/kunshan/pipeline_network_20251021_110401.shp"
+    "//10.66.12.53/x.public/exchange/TMP_THJ/WIM/kunshan/pipeline_network_20251021_110401.shp",
+    "rain"
   );
   App.Environment.SetSceneWeather("ModerateRain", 3, false);
-  await setPipelineHeight(App, 200);
-  await setPipelineHighlight(App, true, "#ed1941", 100, ["SN", "SL", "ZT"]);
+  await setPipelineHeight(App, 200, "rain");
+  await setPipelineHighlight(
+    App,
+    true,
+    "#ed1941",
+    100,
+    ["SN", "SL", "ZT"],
+    "rain"
+  );
+
+  await createPipeline(
+    App,
+    "//10.66.12.53/x.public/exchange/TMP_THJ/WIM/kunshan/pipeline_network_20251021_110401.shp",
+    "sewage"
+  );
+  await setPipelineHeight(App, 150, "sewage");
+  await setPipelineHighlight(
+    App,
+    true,
+    "#ed1941",
+    100,
+    ["SN", "SL", "ZT"],
+    "sewage"
+  );
 }
 
 async function handleClearPipeline() {
   App.Environment.SetSceneWeather("Overcast", 3, false);
-  await setPipelineHeight(App, 0);
-  await setPipelineHighlight(App, false, "#ffe600", 15, ["SN", "SL", "ZT"]);
+  await setPipelineHeight(App, 0, "rain");
+  await setPipelineHeight(App, -20, "sewage");
+  await setPipelineHighlight(
+    App,
+    false,
+    "#ffe600",
+    15,
+    ["SN", "SL", "ZT"],
+    "rain"
+  );
+  await setPipelineHighlight(
+    App,
+    false,
+    "#ffe600",
+    15,
+    ["SN", "SL", "ZT"],
+    "sewage"
+  );
 }
 
 let DigCameraUpdated = false;
+
 async function handleDigClicked() {
   if (!DigCameraUpdated) {
     const position: [number, number, number] = [
@@ -902,8 +953,18 @@ async function handleDigClicked() {
 
   await createPipeline(
     App,
-    "//10.66.12.53/x.public/exchange/TMP_THJ/WIM/kunshan/pipeline_network_20251021_110401.shp"
+    "//10.66.12.53/x.public/exchange/TMP_THJ/WIM/kunshan/pipeline_network_20251021_110401.shp",
+    "rain"
   );
+
+  await setPipelineHeight(App, 2, "rain");
+
+  await createPipeline(
+    App,
+    "//10.66.12.53/x.public/exchange/TMP_THJ/WIM/kunshan/pipeline_network_20251021_110401.shp",
+    "sewage"
+  );
+
   await startPickPoint(App, false, true, "surface");
   // App.Environment.SetSceneWeather("ModerateRain", 3, false);
 }
@@ -927,12 +988,13 @@ async function handleResetDigCutClicked() {
   await endPickPoint(App);
 }
 
-async function handlePipeliftClicked(height: string) {
-  await setPipelineHeight(App, parseFloat(height));
+async function handlePipeliftClicked(type: string, height: string) {
+  await setPipelineHeight(App, parseFloat(height), type);
 }
 
 async function handleResetPipeliftClicked() {
-  await setPipelineHeight(App, 0);
+  await setPipelineHeight(App, 2, "rain");
+  await setPipelineHeight(App, 0, "sewage");
 }
 
 async function handlePipelightClicked(
@@ -940,15 +1002,65 @@ async function handlePipelightClicked(
   intensity: number,
   color: string
 ) {
-  await setPipelineHighlight(App, true, color, intensity, ["SN", "SL", "ZT"]);
+  await setPipelineHighlight(
+    App,
+    true,
+    color,
+    intensity,
+    ["SN", "SL", "ZT"],
+    type
+  );
 }
 
 async function handleResetPipelightClicked() {
-  await setPipelineHighlight(App, false, "#ffe600", 15, ["SN", "SL", "ZT"]);
+  await setPipelineHighlight(
+    App,
+    false,
+    "#ffe600",
+    15,
+    ["SN", "SL", "ZT"],
+    "rain"
+  );
+  await setPipelineHighlight(
+    App,
+    false,
+    "#ffe600",
+    15,
+    ["SN", "SL", "ZT"],
+    "sewage"
+  );
 }
 
 async function handlePipeVisibilityToggled(visible: boolean) {
-  await setPipelineVisible(App, visible, ["SN", "SL", "ZT"]);
+  await setPipelineVisible(App, visible, "rain", ["SN", "SL", "ZT"]);
+  await setPipelineVisible(App, visible, "sewage", ["SN", "SL", "ZT"]);
+}
+
+let PipSpeEffectUpdated = false;
+async function handlePipSpeEffectClicked() {
+  if (!PipSpeEffectUpdated) {
+    const position: [number, number, number] = [
+      120.97430329540073, 31.39360901829823, 8.633172645532724,
+    ];
+    const rotation = { pitch: -11.957905769348145, yaw: -3.2465500831604004 };
+    await updateCamera(App, position, rotation, 2);
+    PipSpeEffectUpdated = true; // 标记为已调用
+  }
+
+  const location: [number, number, number] = [
+    120.97441177481612, 31.3936132367833, 0,
+  ];
+  await createEffect(
+    App,
+    location, // 位置
+    [2, 2, 0.11], // 缩放
+    true, // 是否可见
+    "66e520631a7046c139881a9a379a2063" // seedId
+  );
+}
+
+async function handleResetSpeEffectClicked() {
+  await deleteEffect(App);
 }
 
 async function handleLiquidlevelClicked(
@@ -956,10 +1068,16 @@ async function handleLiquidlevelClicked(
   pipeLiquidLevel: number,
   color: string
 ) {
-  await setPipeLiquidLevel(App, pipeLiquidLevel, color);
+  await setPipeLiquidLevel(App, pipeLiquidLevel, color, pipeType);
+}
+
+async function handleResetLiquidlevelClicked() {
+  await setPipeLiquidLevel(App, 0, "#000000", "rain");
+  await setPipeLiquidLevel(App, 0, "#000000", "sewage");
 }
 
 async function handleFlowdirectionClicked(
+  pipeType: string,
   direction: string,
   style: string,
   color: string
@@ -969,12 +1087,14 @@ async function handleFlowdirectionClicked(
     parseInt(direction),
     parseInt(style),
     color,
-    true
+    true,
+    pipeType
   );
 }
 
 async function handleResetFlowdirectionClicked() {
-  await setPipeFlowState(App, 0, 0, "#000000", false);
+  await setPipeFlowState(App, 0, 0, "#000000", false, "rain");
+  await setPipeFlowState(App, 0, 0, "#000000", false, "sewage");
 }
 
 function classifyRainStation(stationType: string, selected: string[]) {
@@ -1055,6 +1175,31 @@ async function openStationCurve(station: string, action?: string) {
   } else if (action === "close") {
     console.log(`❎ ${station} 曲线弹窗已关闭`);
   }
+}
+
+async function handleMenuInundationExecutePlan(plan: string, radio: string) {
+  const position: [number, number, number] = [
+    120.97674707972008, 31.37579600061361, 3801.609975676696,
+  ];
+  const rotation = { pitch: -82.7701644897461, yaw: -87.65797424316406 };
+  await updateCamera(App, position, rotation, 2);
+
+  if (radio === "heat") {
+    await createAndRunHeatmap(
+      App,
+      "http://10.100.10.124:8090/inundation/config/Heatmap_Gen.json"
+    );
+  } else if (radio === "water") {
+    await createAndRunInundation(
+      App,
+      "http://10.100.10.124:8090/inundation/config/Inud_Gen.json"
+    );
+  }
+}
+
+async function handleMenuInundationClear() {
+  await deleteInundationAlgorithm(true);
+  await deleteHeatmapAlgorithm(true);
 }
 
 onBeforeUnmount(() => {

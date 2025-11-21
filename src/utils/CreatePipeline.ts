@@ -8,15 +8,16 @@
  */
 
 const pipelineCache = {
-    pipeline: null as any,
+    pipelines: {} as Record<string, any>,
 };
 
 /**
  * 创建管网对象
  * @param App - WDP 实例
  * @param shpUrl - 管网 SHP 文件路径
+ * @param key - 管网标识（如 "rain", "sewage"）
  */
-export async function createPipeline(App: any, shpUrl: string): Promise<void> {
+export async function createPipeline(App: any, shpUrl: string, key: string): Promise<void> {
     if (!App) {
         console.warn("⚠️ App 实例无效，无法创建管网");
         return;
@@ -26,10 +27,10 @@ export async function createPipeline(App: any, shpUrl: string): Promise<void> {
         console.log("🚧 开始创建管网...");
 
         // 如果已缓存对象则直接复用
-        if (pipelineCache.pipeline) {
-            console.log("🔁 使用缓存的管网对象:", pipelineCache.pipeline.eid);
-            return;
-        }
+        if (pipelineCache.pipelines[key]) {
+        console.log(`🔁 管网已存在（${key}），使用缓存 EID:`, pipelineCache.pipelines[key].eid);
+        return;
+    }
 
         const jsondata = {
             apiClassName: "WimPipeAPI",
@@ -37,7 +38,7 @@ export async function createPipeline(App: any, shpUrl: string): Promise<void> {
             args: {
                 guid: "",
                 pipeUrl: shpUrl,
-                groupType: "sanmenxia",
+                groupType: key,
                 fieldList: {
                     fields: [
                         { StandardName: "PipeFlow", FeatureName: "flow_direction" },
@@ -79,10 +80,10 @@ export async function createPipeline(App: any, shpUrl: string): Promise<void> {
         const res = await App.Customize.RunCustomizeApi(jsondata);
         console.log("🧱 管网创建结果:", res);
 
-        if (!res.success) throw new Error("❌ 管网创建失败");
+        if (!res.success) throw new Error(`❌ 管网创建失败: ${key}`);
 
-        pipelineCache.pipeline = res.result;
-        console.log("✅ 管网创建成功:", pipelineCache.pipeline.eid);
+        pipelineCache.pipelines[key] = res.result;
+        console.log(`✅ 管网创建成功（${key}）:`, res.result.eid);
         console.log("⏳ 等待管网加载完成...");
         await new Promise((resolve) => setTimeout(resolve, 3000));
     } catch (error) {
@@ -91,18 +92,32 @@ export async function createPipeline(App: any, shpUrl: string): Promise<void> {
 }
 
 /**
+ * 获取管网对象
+ */
+function getPipelineByKey(key: string): any {
+    const pipeline = pipelineCache.pipelines[key];
+    if (!pipeline) {
+        console.warn(`⚠️ 管网不存在，请先创建：${key}`);
+        return null;
+    }
+    return pipeline;
+}
+
+/**
  * 修改管网高度
  * @param App - WDP 实例
  * @param height - 新的管网高度
+ * @param key - 管网标识（如 "rain", "sewage"）
  */
-export async function setPipelineHeight(App: any, height: number): Promise<void> {
+export async function setPipelineHeight(App: any, height: number, key: string): Promise<void> {
     if (!App) {
         console.warn("⚠️ App 实例无效");
         return;
     }
 
-    if (!pipelineCache.pipeline) {
-        console.warn("⚠️ 尚未创建管网，请先调用 createPipeline()");
+    const pipeline = getPipelineByKey(key);
+    if (!pipeline) {
+        console.warn(`⚠️ 尚未创建 ${key} 管网，请先调用 createPipeline(${key})`);
         return;
     }
 
@@ -113,7 +128,7 @@ export async function setPipelineHeight(App: any, height: number): Promise<void>
             args: {
                 guid: "",
                 pipeHeight: height,
-                eid: pipelineCache.pipeline.eid,
+                eid: pipeline.eid,
             },
         };
 
@@ -136,21 +151,24 @@ export async function setPipelineHeight(App: any, height: number): Promise<void>
  * @param color - 高亮颜色（如 "#ffe600"）
  * @param intensity - 高亮强度（数值，如 15）
  * @param types - 管网类型数组（如 ["SN", "SL", "ZT"]）
+ * @param key - 管网标识（如 "rain", "sewage"）
  */
 export async function setPipelineHighlight(
     App: any,
     highlight: boolean,
     color: string,
     intensity: number,
-    types: string[]
+    types: string[],
+    key: string
 ): Promise<void> {
     if (!App) {
         console.warn("⚠️ App 实例无效");
         return;
     }
 
-    if (!pipelineCache.pipeline) {
-        console.warn("⚠️ 尚未创建管网，请先调用 createPipeline()");
+    const pipeline = getPipelineByKey(key);
+    if (!pipeline) {
+        console.warn(`⚠️ 尚未创建 ${key} 管网，请先调用 createPipeline(${key})`);
         return;
     }
 
@@ -163,7 +181,7 @@ export async function setPipelineHighlight(
                 highLightInst: intensity, // 高亮强度
                 highLightType: highlight ? 1 : 0, // 1=开，0=关
                 highLightColor: color, // 高亮颜色
-                eid: pipelineCache.pipeline.eid, // 当前管网对象的 EID
+                eid: pipeline.eid, // 当前管网对象的 EID
                 fIds: [],
                 types: types || [], // 需要高亮的类型
             },
@@ -188,24 +206,27 @@ export async function setPipelineHighlight(
  * @param App - WDP 实例
  * @param visible - 是否显示（true = 显示，false = 隐藏）
  * @param types - 管网类型数组（如 ["SN", "SL", "ZT"]，可选）
+ * @param key - 管网标识（如 "rain", "sewage"）
  */
 export async function setPipelineVisible(
     App: any,
     visible: boolean,
-    types?: string[]
+    key: string,
+    types?: string[],
 ): Promise<void> {
     if (!App) {
         console.warn("⚠️ App 实例无效");
         return;
     }
 
-    if (!pipelineCache.pipeline) {
-        console.warn("⚠️ 尚未创建管网，请先调用 createPipeline()");
+    const pipeline = getPipelineByKey(key);
+    if (!pipeline) {
+        console.warn(`⚠️ 尚未创建 ${key} 管网，请先调用 createPipeline(${key})`);
         return;
     }
 
     try {
-        console.log(`👁️ 正在${visible ? "显示" : "隐藏"}管网...`);
+        console.log(`👁️ 正在${visible ? "显示" : "隐藏"} ${key} 管网...`);
 
         const jsondata = {
             apiClassName: "WimPipeAPI",
@@ -213,7 +234,7 @@ export async function setPipelineVisible(
             args: {
                 guid: "",
                 visible, // true 显示, false 隐藏
-                eid: pipelineCache.pipeline.eid,
+                eid: pipeline.eid,
                 fIds: [],
                 types: types || [], // 可以指定类型，不传则作用于全部
             },
@@ -240,34 +261,37 @@ export async function setPipelineVisible(
  * @param pipeLiquidLevel - 管网液位高度（单位：米）
  * @param pipeLiquidLevels - 管网液位高度数组（单位：米）
  * @param color - 颜色
+ * @param key - 管网标识（如 "rain", "sewage"）
  * @param types - 管网fids数组（如 ["SN", "SL", "ZT"]，可选）
  */
 export async function setPipeLiquidLevel(
     App: any,
     pipeLiquidLevel: number,
     color: string,
+    key: string,
     pipeLiquidLevels?: number[],
-    types?: string[]
+    types?: string[],
 ): Promise<void> {
     if (!App) {
         console.warn("⚠️ App 实例无效");
         return;
     }
 
-    if (!pipelineCache.pipeline) {
-        console.warn("⚠️ 尚未创建管网，请先调用 createPipeline()");
+    const pipeline = getPipelineByKey(key);
+    if (!pipeline) {
+        console.warn(`⚠️ 尚未创建 ${key} 管网，请先调用 createPipeline(${key})`);
         return;
     }
 
     try {
-        console.log(`👁️ 正在设置管网液位高度为 ${pipeLiquidLevel} 米, 颜色为${color}...`);
+        console.log(`👁️ 正在设置 ${key} 管网液位高度为 ${pipeLiquidLevel} 米, 颜色为${color}...`);
 
         const jsondata = {
             apiClassName: "WimPipeAPI",
             apiFuncName: "SetPipeLiquidLevel",
             args: {
                 guid: "",
-                eid: pipelineCache.pipeline.eid,
+                eid: pipeline.eid,
                 fIds: [],
                 pipeLiquidLevel: pipeLiquidLevel,
                 pipeLiquidLevels: pipeLiquidLevels,
@@ -299,6 +323,7 @@ export async function setPipeLiquidLevel(
  * @param pipeFlowStyle - 管网流向样式（0,1,2）
  * @param color - 颜色
  * @param visible - 是否显示（true = 显示，false = 隐藏）
+ * @param key - 管网标识（如 "rain", "sewage"）
  * @param fIds - 管网fids数组（"fid"为各构件要素的唯一标识ID，可选）
  */
 export async function setPipeFlowState(
@@ -307,6 +332,7 @@ export async function setPipeFlowState(
     pipeFlowStyle: number,
     color: string,
     visible: boolean,
+    key: string,
     fIds?: number[],
 ): Promise<void> {
     if (!App) {
@@ -314,13 +340,14 @@ export async function setPipeFlowState(
         return;
     }
 
-    if (!pipelineCache.pipeline) {
-        console.warn("⚠️ 尚未创建管网，请先调用 createPipeline()");
+    const pipeline = getPipelineByKey(key);
+    if (!pipeline) {
+        console.warn(`⚠️ 尚未创建 ${key} 管网，请先调用 createPipeline(${key})`);
         return;
     }
 
     try {
-        console.log(`👁️ 正在设置管网流向为 ${pipeFlowdirction} ,样式为${pipeFlowStyle}, 颜色为${color}..., 显示为${visible}`);
+        console.log(`👁️ 正在设置 ${key} 管网流向为 ${pipeFlowdirction} ,样式为${pipeFlowStyle}, 颜色为${color}..., 显示为${visible}`);
 
         const jsondata = {
             "apiClassName": "WimPipeAPI",
@@ -328,7 +355,7 @@ export async function setPipeFlowState(
             "args":
             {
                 "guid": "",  //为空即可
-                "eid": pipelineCache.pipeline.eid,
+                "eid": pipeline.eid,
                 "visible": visible,
                 "fIds": fIds,
                 "flow": pipeFlowdirction,
@@ -342,7 +369,7 @@ export async function setPipeFlowState(
 
         if (res.success) {
             console.log(
-                `✅ 管网流向设置成功: ${pipeFlowdirction} ,样式为${pipeFlowStyle}, 颜色为${color}..., 显示为${visible} (${fIds?.length ? fIds.join(", ") : "全部类型"})`
+                `✅ ${key} 管网流向设置成功: ${pipeFlowdirction} ,样式为${pipeFlowStyle}, 颜色为${color}..., 显示为${visible} (${fIds?.length ? fIds.join(", ") : "全部类型"})`
             );
         } else {
             console.error("❌ 管网流向设置失败:", res);
@@ -355,7 +382,7 @@ export async function setPipeFlowState(
 /**
  * 获取当前缓存的管网对象（如果需要直接访问）
  */
-export function getPipeline(): any {
-    return pipelineCache.pipeline;
+export function getPipeline(key: string): any {
+    return pipelineCache.pipelines[key];
 }
 

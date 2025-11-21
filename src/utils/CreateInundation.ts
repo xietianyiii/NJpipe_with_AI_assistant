@@ -75,8 +75,8 @@ export async function createAndRunInundation(App: any, configPath: string): Prom
       return new Promise(resolve => setTimeout(resolve, ms));
     }
 
-    await sleep(500);
-    
+    await sleep(5000);
+
     // 5️⃣ 运行淹没算法
     const runRes = await inundationAlgo.RunAlgorithm({
       offset: [0, 0, 0],
@@ -115,9 +115,9 @@ export async function deleteInundationAlgorithm(force: boolean = true): Promise<
     const res = await inundationCache.algorithm.DeleteAlgorithm({ force });
     console.log("✅ 删除结果:", res);
 
-    // 删除后清除缓存
+    // // 删除后清除缓存
     inundationCache.algorithm = null;
-    inundationCache.material = null;
+    // inundationCache.material = null;
     console.log("🧹 缓存已清除");
   } catch (error) {
     console.error("🚨 删除淹没算法出错:", error);
