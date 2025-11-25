@@ -16,13 +16,15 @@ const movePathCache = {
  * @param coordinates - 路径坐标点数组 [[lon, lat, height], ...]
  * @param color - 路径颜色（HEX 或 rgba）
  * @param pathType - 路径样式类型，如 "arrow"、"line"
+ * @param visible - 是否可见
  * @returns Promise<any> - 返回路径对象
  */
 export async function createMovePath(
     App: any,
     coordinates: [number, number, number][],
     color: string = "a54cffff",
-    pathType: "arrow" | "arrow_dot" | "scan_line" = "arrow"
+    pathType: "arrow" | "arrow_dot" | "scan_line" = "arrow",
+    visible: boolean = true
 ): Promise<any> {
     if (!App?.Scene) {
         console.error("❌ App 实例无效，请确保包含 Scene 模块");
@@ -50,7 +52,7 @@ export async function createMovePath(
                 passColor: "c9ff23ff",
             },
             customId: "my-movePath-id",
-            bVisible: true,
+            bVisible: visible,
         });
 
         const { success } = await App.Scene.Add(path, {
@@ -337,4 +339,82 @@ export async function startVehicleMove(
     } catch (error) {
         console.error("🚨 startVehicleMove 执行出错:", error);
     }
+}
+
+
+/**
+ * 让任意实体沿路径移动（通用封装）
+ *
+ * @param App - WDP 实例
+ * @param entity - 需要移动的实体对象，例如 particle / model / poi / effects
+ * @param path - 已创建的路径对象（App.Path）
+ * @param duration - 移动时长（秒）
+ * @param loop - 是否循环（true 循环，false 不循环）
+ * @param reverse - 是否反向移动
+ * @param state - 初始状态（play/pause/stop）
+ */
+export async function moveEntityAlongPath(
+  App: any,
+  entity: any,
+  path: any,
+  duration: number = 20,
+  loop: boolean = false,
+  reverse: boolean = false,
+  state: "play" | "pause" | "stop" = "play"
+): Promise<any> {
+  if (!App?.Scene) {
+    console.error("❌ App 实例无效，请确认 Scene 模块存在");
+    return null;
+  }
+
+  if (!entity) {
+    console.error("❌ entity 不能为空！你必须传入一个实体对象");
+    return null;
+  }
+
+  if (!path) {
+    console.error("❌ path 不能为空！你必须传入路径对象");
+    return null;
+  }
+
+  try {
+    console.log("🌀 准备让实体沿路径移动...");
+
+    // 1️⃣ 删除旧的 bound 移动对象
+    const old = await App.Scene.GetByCustomId(["common-moveObj-id"]);
+    if (old.success && old.result.length > 0) {
+      console.log("🧹 删除旧的移动对象");
+      await old.result[0].Delete();
+    }
+
+    // 2️⃣ 创建 Bound 移动对象
+    const moveObj = new App.Bound({
+      moving: entity,
+      path: path,
+      boundStyle: {
+        time: duration,
+        bLoop: loop,
+        bReverse: reverse,
+        state,
+      },
+      customId: "common-moveObj-id",
+      rotator: { pitch: 0, yaw: 0, roll: 0 },
+      offset: { left: 0, forward: 0, up: 0 },
+    });
+
+    const res = await App.Scene.Add(moveObj);
+
+    if (res.success) {
+      console.log(
+        `🚗 实体沿路径移动已启动：时长=${duration}s 循环=${loop} 反向=${reverse} 状态=${state}`
+      );
+    } else {
+      console.warn("⚠️ 启动移动失败:", res);
+    }
+
+    return moveObj;
+  } catch (error) {
+    console.error("🚨 moveEntityAlongPath 执行出错:", error);
+    return null;
+  }
 }

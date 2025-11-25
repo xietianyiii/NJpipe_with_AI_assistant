@@ -37,6 +37,7 @@
         @flowdirectionClicked="handleFlowdirectionClicked"
         @resetflowdirectionClicked="handleResetFlowdirectionClicked"
         @pipevisibilityToggled="handlePipeVisibilityToggled"
+        @pipeLabelToggled="handlePipeLabelToggled"
         @pipSpeEffectClicked="handlePipSpeEffectClicked"
         @resetSpeEffectClicked="handleResetSpeEffectClicked"
       />
@@ -63,6 +64,7 @@
         @onDispatchPlanClicked="handleDispatchPlanClicked"
         @downDispatchPlanClicked="handleDownDispatchPlanClicked"
         @onSmartDispatchClicked="handleSmartDispatchClicked"
+        @onCloseRoadFloodAlert="handleCloseRoadFloodAlert"
         @onDispatchExecutionClicked="handleDispatchExecutionClicked"
       />
     </div>
@@ -178,11 +180,15 @@ import {
   setPipelineVisible,
   setPipeLiquidLevel,
   setPipeFlowState,
+  enablePipelineClick,
+  registerPipelineClickEvent,
+  extractPipelineClickInfo,
+  focusPipelineSegment,
+  addPipelineLabel,
+  deletePipelineLabel,
 } from "@/utils/CreatePipeline";
 import { createEffect, deleteEffect } from "@/utils/CreateSpecialEffect";
-import { setEntityCustomId, setEntityVisible } from "@/utils/SetEidEntity";
 import { updateCamera } from "@/utils/updateCamera";
-// 导入面板组件（移除文件扩展名以改进模块解析）
 import DrainagePanel from "@/components/Drainage";
 import MoniPanel from "@/components/Moni";
 import SimPanel from "@/components/Sim";
@@ -359,6 +365,24 @@ function registerRenderEvents() {
 
         loadingText.value = "场景加载完成！";
         setTimeout(() => (loading.value = false), 800);
+
+        await new Promise((resolve) => setTimeout(resolve, 10000));
+
+        // 创建管线
+        await createPipeline(
+          App,
+          "//10.66.12.53/x.public/exchange/TMP_THJ/WIM/kunshan/pipeline_network_20251021_110401.shp",
+          "rain"
+        );
+
+        await new Promise((resolve) => setTimeout(resolve, 10000));
+        await setPipelineHeight(App, 2, "rain");
+        // 创建管线
+        await createPipeline(
+          App,
+          "//10.66.12.53/x.public/exchange/TMP_THJ/WIM/kunshan/pipeline_network_20251021_110401.shp",
+          "sewage"
+        );
       },
     },
     {
@@ -615,6 +639,11 @@ async function handleOnRoadIconClick() {
     App,
     "http://10.100.10.124:8090/inundation/config/Water_point_grid.json"
   );
+}
+
+async function handleCloseRoadFloodAlert() {
+  console.log("🚫 关闭了积水告警");
+  await deleteInundationAlgorithm();
 }
 
 async function handleCreateFloodPumpCar() {
@@ -951,21 +980,14 @@ async function handleDigClicked() {
     DigCameraUpdated = true; // 标记为已调用
   }
 
-  await createPipeline(
-    App,
-    "//10.66.12.53/x.public/exchange/TMP_THJ/WIM/kunshan/pipeline_network_20251021_110401.shp",
-    "rain"
-  );
-
-  await setPipelineHeight(App, 2, "rain");
-
-  await createPipeline(
-    App,
-    "//10.66.12.53/x.public/exchange/TMP_THJ/WIM/kunshan/pipeline_network_20251021_110401.shp",
-    "sewage"
-  );
-
   await startPickPoint(App, false, true, "surface");
+
+  // await createPipeline(
+  //   App,
+  //   "//10.66.12.53/x.public/exchange/TMP_THJ/WIM/kunshan/pipeline_network_20251021_110401.shp",
+  //   "sewage"
+  // );
+
   // App.Environment.SetSceneWeather("ModerateRain", 3, false);
 }
 
@@ -1034,6 +1056,22 @@ async function handleResetPipelightClicked() {
 async function handlePipeVisibilityToggled(visible: boolean) {
   await setPipelineVisible(App, visible, "rain", ["SN", "SL", "ZT"]);
   await setPipelineVisible(App, visible, "sewage", ["SN", "SL", "ZT"]);
+}
+
+async function handlePipeLabelToggled(visible: boolean) {
+  if (visible) {
+    await enablePipelineClick(App, true);
+    await registerPipelineClickEvent(App, async (res) => {
+      const info = extractPipelineClickInfo(res);
+      if (!info) return;
+      await focusPipelineSegment(App, info.eid, info.fId, 100);
+      await addPipelineLabel(App, info.eid, info.fId, "PipeInfo");
+      await addPipelineLabel(App, info.eid, info.fId, "Fluid");
+    });
+  } else {
+    await enablePipelineClick(App, false);
+    await deletePipelineLabel(App);
+  }
 }
 
 let PipSpeEffectUpdated = false;

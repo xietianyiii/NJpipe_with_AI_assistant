@@ -10,25 +10,35 @@
         <div class="cards-left-wrapper">
           <!-- 水位监测 -->
           <div class="card card-3">
-            <div class="card-header">
-              <svg
-                t="1759140862845"
-                class="card-header-icon"
-                viewBox="0 0 1024 1024"
-                version="1.1"
-                xmlns="http://www.w3.org/2000/svg"
-                p-id="31836"
-                width="14"
-                height="12"
-              >
-                <path
-                  d="M0 355.388235h355.388235V0H0v355.388235zM668.611765 0v355.388235H1024V0H668.611765zM0 1024h355.388235V668.611765H0V1024z m668.611765 0H1024V668.611765H668.611765V1024z"
-                  fill="#1ebdd0"
-                  p-id="31837"
-                ></path>
-              </svg>
-              积水告警
-              
+            <div class="card-header card-header-flex">
+              <div class="card-header-left">
+                <svg
+                  t="1759140862845"
+                  class="card-header-icon"
+                  viewBox="0 0 1024 1024"
+                  version="1.1"
+                  xmlns="http://www.w3.org/2000/svg"
+                  p-id="31836"
+                  width="14"
+                  height="12"
+                >
+                  <path
+                    d="M0 355.388235h355.388235V0H0v355.388235zM668.611765 0v355.388235H1024V0H668.611765zM0 1024h355.388235V668.611765H0V1024z m668.611765 0H1024V668.611765H668.611765V1024z"
+                    fill="#1ebdd0"
+                    p-id="31837"
+                  ></path>
+                </svg>
+                积水告警
+              </div>
+              <div class="card-header-right">
+                <button
+                  class="card-close-button"
+                  @click="onCloseRoadFloodAlert"
+                  v-show="isFloodAlertCloseButtonVisible"
+                >
+                  ✕
+                </button>
+              </div>
             </div>
             <div class="card3-content">
               <div class="card3-row1-content">
@@ -528,6 +538,7 @@ const emit = defineEmits<{
   (e: "downDispatchPlanClicked"): void;
   (e: "onDispatchExecutionClicked"): void;
   (e: "onRoadIconClick"): void;
+  (e: "onCloseRoadFloodAlert"): void;
   (e: "update:isSimCard4CloseButtonVisible", value: boolean): void;
 }>();
 
@@ -541,6 +552,9 @@ const props = defineProps({
 // 按钮激活状态管理
 const activeButton = ref<"smart" | "manual" | null>(null);
 const dispatchPlanActive = ref(false);
+
+// 积水告警关闭按钮显示控制
+const isFloodAlertCloseButtonVisible = ref(false);
 
 const handleButtonClick = (type: string) => {
   if (type === "smart") {
@@ -660,7 +674,13 @@ function onCloseCard4() {
 }
 
 function handleRoadIconClick() {
+  isFloodAlertCloseButtonVisible.value = true;
   emit("onRoadIconClick");
+}
+
+function onCloseRoadFloodAlert() {
+  isFloodAlertCloseButtonVisible.value = false;
+  emit("onCloseRoadFloodAlert");
 }
 
 // 监听泵车类别选择变化
@@ -831,6 +851,54 @@ const handleDispatchExecution = () => {
   backdrop-filter: blur(1px);
   position: relative;
   user-select: none;
+}
+
+/* 标题栏左右布局 */
+.card-header-flex {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.card-header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.card-header-right {
+  display: flex;
+  align-items: center;
+}
+
+/* 卡片关闭按钮样式 */
+.card-close-button {
+  background: linear-gradient(
+    to right,
+    rgba(169, 49, 49, 0.7) 0%,
+    rgba(113, 79, 79, 0.7) 33%,
+    rgba(245, 45, 45, 0.7) 66%,
+    rgba(104, 39, 39, 0.7) 100%
+  );
+  background-size: 200% 100%;
+  background-position: 0% 0%;
+  color: #ffd9dc;
+  font-weight: 600;
+  font-family: "SimHei", Arial, sans-serif;
+  text-shadow: 0 0 6px #ff4d4d;
+  border: none;
+  border-radius: 4px;
+  padding: 4px 10px;
+  cursor: pointer;
+  backdrop-filter: blur(1px);
+  font-size: 15px;
+  transition: all 0.3s ease;
+  margin-left: auto;
+}
+
+.card-close-button:hover {
+  background-position: -100% 0%;
+  transform: scale(1.01);
 }
 
 /* card2标题栏左右排列 */

@@ -28,9 +28,9 @@ export async function createPipeline(App: any, shpUrl: string, key: string): Pro
 
         // 如果已缓存对象则直接复用
         if (pipelineCache.pipelines[key]) {
-        console.log(`🔁 管网已存在（${key}），使用缓存 EID:`, pipelineCache.pipelines[key].eid);
-        return;
-    }
+            console.log(`🔁 管网已存在（${key}），使用缓存 EID:`, pipelineCache.pipelines[key].eid);
+            return;
+        }
 
         const jsondata = {
             apiClassName: "WimPipeAPI",
@@ -386,3 +386,315 @@ export function getPipeline(key: string): any {
     return pipelineCache.pipelines[key];
 }
 
+
+/**
+ * pipelineClickEvent.ts
+ * 开启管网点击事件 + 注册回调
+ */
+
+
+/**
+ * 开启管网点击事件（SetPipeClickStatus）
+ *
+ * @param App - WDP 实例对象
+ * @param enable - 是否开启点击回调（true 开启 / false 关闭）
+ * @returns Promise<any>
+ */
+export async function enablePipelineClick(
+    App: any,
+    enable: boolean = true
+): Promise<any> {
+    if (!App?.Customize?.RunCustomizeApi) {
+        console.error("❌ App 实例无效，缺少 Customize.RunCustomizeApi");
+        return null;
+    }
+
+    try {
+        console.log(`🔔 管网点击事件：${enable ? "开启" : "关闭"}...`);
+
+        const jsondata = {
+            apiClassName: "WimPipeAPI",
+            apiFuncName: "SetPipeClickStatus",
+            args: {
+                guid: "",
+                status: enable,
+            },
+        };
+
+        const res = await App.Customize.RunCustomizeApi(jsondata);
+
+        if (res.success) {
+            console.log("✅ 管网点击事件设置成功:", res);
+        } else {
+            console.warn("⚠️ 管网点击事件设置失败:", res);
+        }
+
+        return res;
+    } catch (error) {
+        console.error("🚨 enablePipelineClick 执行出错:", error);
+        return null;
+    }
+}
+
+
+
+/**
+ * 注册管网点击事件回调（OnPipeElementClicked）
+ *
+ * @param App - WDP 实例
+ * @param onClick - 点击回调函数：参数为 res（包含管线属性信息）
+ * @returns Promise<void>
+ */
+export async function registerPipelineClickEvent(
+    App: any,
+    onClick: (res: any) => void
+): Promise<void> {
+    if (!App?.Renderer?.RegisterSceneEvent) {
+        console.error("❌ App 实例无效，缺少 Renderer.RegisterSceneEvent");
+        return;
+    }
+
+    try {
+        console.log("🎧 正在注册管网点击事件回调...");
+
+        await App.Renderer.RegisterSceneEvent([
+            {
+                name: "OnPipeElementClicked",
+                func: async (res: any) => {
+                    console.log("🛰️ 管网元素被点击:", res);
+                    if (onClick) onClick(res);
+                },
+            },
+        ]);
+
+        console.log("✅ 管网点击事件回调注册完成");
+    } catch (error) {
+        console.error("🚨 registerPipelineClickEvent 执行出错:", error);
+    }
+}
+
+/**
+ * 从管网点击事件中提取 eid 和 fId
+ *
+ * @param eventResult - OnPipeElementClicked 回调中的 res
+ * @returns { eid: string, fId: string } | null
+ */
+export function extractPipelineClickInfo(eventResult: any): { eid: string, fId: string } | null {
+    if (!eventResult || !eventResult.result) {
+        console.warn("⚠️ 点击事件格式异常，无法解析管网信息:", eventResult);
+        return null;
+    }
+
+    const eid = eventResult.result.eid;
+    const fId = eventResult.result.fId;
+
+    if (!eid || !fId) {
+        console.warn("⚠️ 缺少 eid 或 fId, 返回信息不完整:", eventResult.result);
+        return null;
+    }
+
+    console.log(`📌 管网点击信息提取成功 -> eid: ${eid}, fId: ${fId}`);
+
+    return { eid, fId };
+}
+
+//////////////////////////////
+// 🎯 聚焦指定管线
+//////////////////////////////
+
+/**
+ * 聚焦指定管线段
+ *
+ * @param App - WDP 实例对象
+ * @param eid - 管网实体 EID
+ * @param fId - 管段 FID
+ * @param pitch - 俯仰角（默认 -30）
+ * @param yaw - 偏航角（默认 0）
+ * @param distanceFactor - 镜头距离系数（默认 1）
+ * @param flyTime - 飞行过渡时间（默认 1s）
+ */
+export async function focusPipelineSegment(
+    App: any,
+    eid: string,
+    fId: string,
+    distanceFactor: number = 5,
+    pitch: number = -30,
+    yaw: number = 0,
+    flyTime: number = 1
+): Promise<any> {
+    if (!App?.Customize?.RunCustomizeApi) {
+        console.error("❌ App 实例无效，请检查 Customize 模块");
+        return null;
+    }
+
+    try {
+        console.log(
+            `🎯 正在聚焦管段... \n` +
+            `   ➤ eid: ${eid}\n` +
+            `   ➤ fId: ${fId}\n` +
+            `   ➤ pitch: ${pitch}\n` +
+            `   ➤ yaw: ${yaw}\n` +
+            `   ➤ distanceFactor(传入): ${distanceFactor}\n` +   // 👈 打印你指定的参数
+            `   ➤ flyTime: ${flyTime}`
+        );
+
+
+        const jsondata = {
+            apiClassName: "WimPipeAPI",
+            apiFuncName: "PipeCoordquery",
+            args: {
+                guid: "",
+                eid,
+                fId,
+                pitch,
+                yaw,
+                distanceFactor,
+                flyTime,
+            },
+        };
+
+        const res = await App.Customize.RunCustomizeApi(jsondata);
+
+        if (res.success) {
+            console.log("✅ 管段聚焦成功:", res);
+        } else {
+            console.warn("⚠️ 管段聚焦失败:", res);
+        }
+
+        return res;
+    } catch (error) {
+        console.error("🚨 focusPipelineSegment 执行出错:", error);
+        return null;
+    }
+}
+
+// 当前显示的管线标签缓存
+const pipelineLabelCache = {
+    eid: null as string | null,
+    fId: null as string | null,
+};
+
+//////////////////////////////
+// 🏷️ 添加管线标签
+//////////////////////////////
+
+/**
+ * 为指定管段添加标签
+ *
+ * @param App - WDP 实例对象
+ * @param eid - 管网实体 EID
+ * @param fId - 管段 FID
+ * @param type - 标签类型 PipeInfo | WellInfo | Fluid
+ */
+export async function addPipelineLabel(
+    App: any,
+    eid: string,
+    fId: string,
+    type: "PipeInfo" | "WellInfo" | "Fluid" = "PipeInfo"
+): Promise<any> {
+    if (!App?.Customize?.RunCustomizeApi) {
+        console.error("❌ App 实例无效，请检查 Customize 模块");
+        return null;
+    }
+
+    try {
+        // 1️⃣ 先删除上一条的标签
+        if (pipelineLabelCache.eid && pipelineLabelCache.fId) {
+            await deletePipelineLabel(App);
+        }
+
+        console.log(`🏷️ 添加管段标签 eid=${eid}, fId=${fId}, type=${type} ...`);
+
+        const jsondata = {
+            apiClassName: "WimPipeAPI",
+            apiFuncName: "AddLabels",
+            args: {
+                guid: "",
+                eid,
+                fid: fId,
+                Type: type,
+            },
+        };
+
+        const res = await App.Customize.RunCustomizeApi(jsondata);
+
+        if (res.success) {
+            console.log("✅ 标签添加成功:", res);
+
+            pipelineLabelCache.eid = eid;
+            pipelineLabelCache.fId = fId;
+        } else {
+            console.warn("⚠️ 标签添加失败:", res);
+        }
+
+        return res;
+    } catch (error) {
+        console.error("🚨 addPipelineLabel 执行出错:", error);
+        return null;
+    }
+}
+
+
+//////////////////////////////
+// 🗑️ 删除标签（自动处理缓存）
+//////////////////////////////
+
+/**
+ * 删除指定管段的标签
+ * 如果传入 eid 和 fId，则删除该标签；
+ * 如果未传入，则删除缓存中的标签（上一条）
+ *
+ * @param App - WDP 实例对象
+ * @param eid - 管网实体 EID（可选）
+ * @param fId - 管段 FID（可选）
+ * @param type - 标签类型，"" 表示全部类型
+ */
+export async function deletePipelineLabel(
+    App: any,
+    eid?: string,
+    fId?: string,
+    type: "PipeInfo" | "WellInfo" | "Fluid" | "" = ""
+): Promise<void> {
+    if (!App?.Customize?.RunCustomizeApi) {
+        console.error("❌ App 实例无效");
+        return;
+    }
+
+    // 若未传入，则删除缓存中记录的标签
+    const targetEid = eid || pipelineLabelCache.eid;
+    const targetFid = fId || pipelineLabelCache.fId;
+
+    if (!targetEid || !targetFid) {
+        console.warn("⚠️ 没有可删除的标签（缓存为空）");
+        return;
+    }
+
+    try {
+        console.log(`🗑️ 删除标签 eid=${targetEid}, fId=${targetFid}`);
+
+        const jsondata = {
+            apiClassName: "WimPipeAPI",
+            apiFuncName: "DeleteLabels",
+            args: {
+                guid: "",
+                eid: targetEid,
+                fid: targetFid,
+                Type: type,
+            },
+        };
+
+        const res = await App.Customize.RunCustomizeApi(jsondata);
+
+        if (res.success) {
+            console.log("✅ 标签删除成功:", res);
+
+            // 清空缓存
+            pipelineLabelCache.eid = null;
+            pipelineLabelCache.fId = null;
+        } else {
+            console.warn("⚠️ 标签删除失败:", res);
+        }
+    } catch (error) {
+        console.error("🚨 deletePipelineLabel 执行出错:", error);
+    }
+}

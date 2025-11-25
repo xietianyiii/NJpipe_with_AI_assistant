@@ -761,6 +761,35 @@
         </svg>
       </div>
 
+      <!-- 8: 管网标签切换 -->
+      <div
+        class="tool-item"
+        :class="{ active: isPipeLabelVisible }"
+        @click="() => handleToolClick(7)"
+      >
+        <svg
+          t="1763973191594"
+          class="icon"
+          viewBox="0 0 1024 1024"
+          version="1.1"
+          xmlns="http://www.w3.org/2000/svg"
+          p-id="2489"
+          width="200"
+          height="200"
+        >
+          <path
+            d="M920.528912 444.49616l-340.111125-340.114737a135.932464 135.932464 0 0 0-96.155899-39.758503L200.418112 64.662657h-0.018063C125.275769 64.662657 64.301413 125.40943 64.301413 200.548159v283.673992a136.091412 136.091412 0 0 0 39.881326 96.199248l340.230335 340.241173a136.022775 136.022775 0 0 0 192.369598 0l283.74624-283.76069c53.128139-53.131752 53.128139-139.277583 0-192.405722z m-45.209673 147.192436l-283.746241 283.760691a72.064544 72.064544 0 0 1-101.924964 0l-340.212273-340.241173A72.187367 72.187367 0 0 1 128.241582 484.218538V200.548159A72.021195 72.021195 0 0 1 200.396437 128.602826l283.843776-0.039737a71.887535 71.887535 0 0 1 50.935389 21.053294l340.114737 340.1039a72.104281 72.104281 0 0 1 0.0289 101.968313z"
+            fill=""
+            p-id="2490"
+          ></path>
+          <path
+            d="M384.002258 255.999097c-70.69543 0-128.003161 57.307731-128.003161 128.003161S313.306828 511.998194 384.002258 511.998194s127.999548-57.307731 127.999548-127.999549S454.690463 255.999097 384.002258 255.999097z m45.296371 173.29592a64.059379 64.059379 0 1 1 18.759396-45.292759 63.640337 63.640337 0 0 1-18.763008 45.292759z"
+            fill=""
+            p-id="2491"
+          ></path>
+        </svg>
+      </div>
+
       <!-- 5 -->
       <div
         class="tool-item"
@@ -941,8 +970,8 @@
             <el-input-number
               v-model="liquidLevel"
               :min="0"
-              :max="100"
-              :step="1"
+              :max="1"
+              :step="0.1"
               class="light-input"
               size="small"
             />
@@ -1127,6 +1156,7 @@ const emit = defineEmits<{
     e: "dra-defect-row-click",
     defect: { id: string; location: string; name: string }
   ): void;
+  (e: "pipeLabelToggled", visible: boolean): void;
 }>();
 
 const handleDigCut = () => {
@@ -1194,6 +1224,13 @@ const handleResetSpeEffect = () => {
 };
 
 const handleToolClick = (index: number) => {
+  // 如果是第7个图标（索引为7），特殊处理管网标签切换
+  if (index === 7) {
+    isPipeLabelVisible.value = !isPipeLabelVisible.value;
+    emit("pipeLabelToggled", isPipeLabelVisible.value);
+    return;
+  }
+  
   activeToolIndex.value = activeToolIndex.value === index ? null : index;
 };
 
@@ -1253,6 +1290,9 @@ const stopDrag = () => {
   document.removeEventListener("mousemove", onDrag);
   document.removeEventListener("mouseup", stopDrag);
 };
+
+// 管网标签显示状态
+const isPipeLabelVisible = ref<boolean>(false);
 
 // 模拟数据（你可以从后端加载）
 const rainwaterLength = 3000;
@@ -1521,7 +1561,7 @@ onMounted(() => {
 }
 
 .up-button {
-  top: 8.6%;
+  top: 5.9%;
   transform: translateY(calc(-50%));
   z-index: 1000;
 }
