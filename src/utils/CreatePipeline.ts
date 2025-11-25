@@ -570,8 +570,9 @@ export async function focusPipelineSegment(
 
 // 当前显示的管线标签缓存
 const pipelineLabelCache = {
-    eid: null as string | null,
-    fId: null as string | null,
+    PipeInfo: { eid: null as string | null, fId: null as string | null },
+    WellInfo: { eid: null as string | null, fId: null as string | null },
+    Fluid: { eid: null as string | null, fId: null as string | null },
 };
 
 //////////////////////////////
@@ -599,8 +600,8 @@ export async function addPipelineLabel(
 
     try {
         // 1️⃣ 先删除上一条的标签
-        if (pipelineLabelCache.eid && pipelineLabelCache.fId) {
-            await deletePipelineLabel(App);
+        if (pipelineLabelCache[type].eid && pipelineLabelCache[type].fId) {
+            await deletePipelineLabel(App, type);
         }
 
         console.log(`🏷️ 添加管段标签 eid=${eid}, fId=${fId}, type=${type} ...`);
@@ -621,8 +622,7 @@ export async function addPipelineLabel(
         if (res.success) {
             console.log("✅ 标签添加成功:", res);
 
-            pipelineLabelCache.eid = eid;
-            pipelineLabelCache.fId = fId;
+            pipelineLabelCache[type] = { eid, fId };
         } else {
             console.warn("⚠️ 标签添加失败:", res);
         }
@@ -651,9 +651,9 @@ export async function addPipelineLabel(
  */
 export async function deletePipelineLabel(
     App: any,
+    type: "PipeInfo" | "WellInfo" | "Fluid",
     eid?: string,
     fId?: string,
-    type: "PipeInfo" | "WellInfo" | "Fluid" | "" = ""
 ): Promise<void> {
     if (!App?.Customize?.RunCustomizeApi) {
         console.error("❌ App 实例无效");
@@ -661,8 +661,9 @@ export async function deletePipelineLabel(
     }
 
     // 若未传入，则删除缓存中记录的标签
-    const targetEid = eid || pipelineLabelCache.eid;
-    const targetFid = fId || pipelineLabelCache.fId;
+    const cache = pipelineLabelCache[type];
+    const targetEid = eid || cache.eid;
+    const targetFid = fId || cache.fId;
 
     if (!targetEid || !targetFid) {
         console.warn("⚠️ 没有可删除的标签（缓存为空）");
@@ -689,8 +690,8 @@ export async function deletePipelineLabel(
             console.log("✅ 标签删除成功:", res);
 
             // 清空缓存
-            pipelineLabelCache.eid = null;
-            pipelineLabelCache.fId = null;
+            pipelineLabelCache[type].eid = null;
+            pipelineLabelCache[type].fId = null;
         } else {
             console.warn("⚠️ 标签删除失败:", res);
         }

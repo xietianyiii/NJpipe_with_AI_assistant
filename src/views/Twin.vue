@@ -1070,7 +1070,9 @@ async function handlePipeLabelToggled(visible: boolean) {
     });
   } else {
     await enablePipelineClick(App, false);
-    await deletePipelineLabel(App);
+    await deletePipelineLabel(App, "PipeInfo");
+    await deletePipelineLabel(App, "WellInfo");
+    await deletePipelineLabel(App, "Fluid");
   }
 }
 
