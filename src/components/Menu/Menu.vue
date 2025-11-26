@@ -564,8 +564,8 @@ function closePopup() {
 
 .floating-button-container {
   position: absolute;
-  top: 95%;
-  left: 160%;
+  top: 110%;
+  left: 162%;
   display: flex;
   align-items: center;
   z-index: 100;
