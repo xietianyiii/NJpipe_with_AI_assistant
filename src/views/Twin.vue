@@ -116,7 +116,18 @@
       >
         <span v-if="!isLoading">更新相机</span>
       </button>
+
+      <button @click="showInfo = true">打开内涝卡片</button>
     </div>
+
+    <InuClickInfoCard
+      :visible="showInfo"
+      :title="clickedGridID"
+      :Inuvalue="currentInuValue"
+      :historyValues="historyData"
+      @close="showInfo = false"
+    >
+    </InuClickInfoCard>
 
     <!-- 加载遮罩 -->
     <div v-if="showLoadingOverlay" class="loading-overlay">
@@ -203,6 +214,14 @@ import { setStationVisibility } from "@/utils/setStationVisibility";
 const LegendCard = defineAsyncComponent(
   () => import("@/components/Twin/legend-card.vue")
 );
+const InuClickInfoCard = defineAsyncComponent(
+  () => import("@/components/Twin/InuClickInfo-card.vue")
+);
+
+const showInfo = ref(false);
+const clickedGridID = ref<string>("359");
+const currentInuValue = ref<number>(51);
+const historyData = ref<number[]>([2, 1.2, 2.31, 1.34, 1.90, 2.30, 1.20]);
 
 const currentLegendType = ref<"pump" | "rain" | "waterlog" | null>(null);
 const PumpPoiRegistry = ref<{ customId: string; stationType: string }[]>([]);
@@ -592,6 +611,12 @@ async function handleCreateWaterLogging() {
     console.log("🎯 点击网格 ID:", info.gridID);
     console.log("📏 当前水深:", info.value);
     console.log("📈 历史水深数组:", info.history);
+
+    // 更新InuClickInfoCard组件的数据
+    clickedGridID.value = info.gridID.toString();
+    currentInuValue.value = info.value;
+    historyData.value = info.history;
+    showInfo.value = true;
   });
 
   const coords: [number, number, number?][] = [
@@ -666,6 +691,12 @@ async function handleOnRoadIconClick() {
     console.log("🎯 点击网格 ID:", info.gridID);
     console.log("📏 当前水深:", info.value);
     console.log("📈 历史水深数组:", info.history);
+
+    // 更新InuClickInfoCard组件的数据
+    clickedGridID.value = info.gridID.toString();
+    currentInuValue.value = info.value;
+    historyData.value = info.history;
+    showInfo.value = true;
   });
 }
 
@@ -695,6 +726,12 @@ async function handleCreateFloodPumpCar() {
     console.log("🎯 点击网格 ID:", info.gridID);
     console.log("📏 当前水深:", info.value);
     console.log("📈 历史水深数组:", info.history);
+
+    // 更新InuClickInfoCard组件的数据
+    clickedGridID.value = info.gridID.toString();
+    currentInuValue.value = info.value;
+    historyData.value = info.history;
+    showInfo.value = true;
   });
 
   const coords: [number, number, number?][] = [
@@ -909,6 +946,12 @@ async function handleCreateEqualRain() {
     console.log("🎯 点击网格 ID:", info.gridID);
     console.log("📏 当前热力值:", info.value);
     console.log("📈 历史热力值数组:", info.history);
+
+    // 更新InuClickInfoCard组件的数据
+    clickedGridID.value = info.gridID.toString();
+    currentInuValue.value = info.value;
+    historyData.value = info.history;
+    showInfo.value = true;
   });
 }
 
@@ -1295,6 +1338,12 @@ async function handleMenuInundationExecutePlan(plan: string, radio: string) {
       console.log("🎯 点击网格 ID:", info.gridID);
       console.log("📏 当前热力值:", info.value);
       console.log("📈 历史热力值数组:", info.history);
+
+      // 更新InuClickInfoCard组件的数据
+      clickedGridID.value = info.gridID.toString();
+      currentInuValue.value = info.value;
+      historyData.value = info.history;
+      showInfo.value = true;
     });
   } else if (radio === "water") {
     await createAndRunInundation(
@@ -1309,6 +1358,12 @@ async function handleMenuInundationExecutePlan(plan: string, radio: string) {
       console.log("🎯 点击网格 ID:", info.gridID);
       console.log("📏 当前水深:", info.value);
       console.log("📈 历史水深数组:", info.history);
+
+      // 更新InuClickInfoCard组件的数据
+      clickedGridID.value = info.gridID.toString();
+      currentInuValue.value = info.value;
+      historyData.value = info.history;
+      showInfo.value = true;
     });
   }
 }
