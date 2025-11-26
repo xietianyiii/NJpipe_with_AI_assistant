@@ -52,7 +52,7 @@ export async function createPipeline(App: any, shpUrl: string, key: string): Pro
                         { StandardName: "PipeSurfaceAltitudeEnd", FeatureName: "zdg" },
                         { StandardName: "PipeBurialDepthStart", FeatureName: "qdm" },
                         { StandardName: "PipeBurialDepthEnd", FeatureName: "zdm" },
-                        { StandardName: "PipeDiameter", FeatureName: "gj" },
+                        { StandardName: "PipeDiameter", FeatureName: "gj", "Expression": "param(gj)*10" },
                         {
                             StandardName: "PipeMaterial",
                             FeatureName: "cz",
