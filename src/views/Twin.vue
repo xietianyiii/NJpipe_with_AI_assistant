@@ -150,6 +150,9 @@ import { deleteShpArea } from "@/utils/deleteShpArea";
 import {
   createAndRunHeatmap,
   deleteHeatmapAlgorithm,
+  enableHeatmapInteract,
+  registerHeatmapClickCallback,
+  extractHeatmapClickInfo,
 } from "@/utils/CreateHeatmap";
 import {
   createMovePath,
@@ -172,6 +175,9 @@ import {
 import {
   createAndRunInundation,
   deleteInundationAlgorithm,
+  enableInundationInteract,
+  registerFloodClickCallback,
+  extractFloodClickInfo,
 } from "@/utils/CreateInundation";
 import {
   createPipeline,
@@ -235,6 +241,9 @@ const isMoniCard4CloseButtonVisible = ref(false);
 
 // 控制SimPanel中按钮的显示状态
 const isSimCard4CloseButtonVisible = ref(false);
+
+// 液位设置状态跟踪
+const isLiquidLevelSet = ref(false);
 
 // 路由参数
 const route = useRoute();
@@ -366,7 +375,7 @@ function registerRenderEvents() {
         loadingText.value = "场景加载完成！";
         setTimeout(() => (loading.value = false), 800);
 
-        await new Promise((resolve) => setTimeout(resolve, 10000));
+        await new Promise((resolve) => setTimeout(resolve, 5000));
 
         // 创建管线
         await createPipeline(
@@ -375,7 +384,7 @@ function registerRenderEvents() {
           "rain"
         );
 
-        await new Promise((resolve) => setTimeout(resolve, 10000));
+        await new Promise((resolve) => setTimeout(resolve, 5000));
         await setPipelineHeight(App, 2, "rain");
         // 创建管线
         await createPipeline(
@@ -575,6 +584,16 @@ async function handleCreateWaterLogging() {
     "http://10.100.10.124:8090/inundation/config/Water_log.json"
   );
 
+  await enableInundationInteract(App, true, true);
+  await registerFloodClickCallback(App, (res) => {
+    const info = extractFloodClickInfo(res);
+    if (!info) return;
+
+    console.log("🎯 点击网格 ID:", info.gridID);
+    console.log("📏 当前水深:", info.value);
+    console.log("📈 历史水深数组:", info.history);
+  });
+
   const coords: [number, number, number?][] = [
     [120.98054103001719, 31.357674881322627, 0],
     [120.93862251117713, 31.403107643888227, 0],
@@ -639,6 +658,15 @@ async function handleOnRoadIconClick() {
     App,
     "http://10.100.10.124:8090/inundation/config/Water_point_grid.json"
   );
+  await enableInundationInteract(App, true, true);
+  await registerFloodClickCallback(App, (res) => {
+    const info = extractFloodClickInfo(res);
+    if (!info) return;
+
+    console.log("🎯 点击网格 ID:", info.gridID);
+    console.log("📏 当前水深:", info.value);
+    console.log("📈 历史水深数组:", info.history);
+  });
 }
 
 async function handleCloseRoadFloodAlert() {
@@ -658,6 +686,16 @@ async function handleCreateFloodPumpCar() {
     App,
     "http://10.100.10.124:8090/inundation/config/Water_point_grid.json"
   );
+
+  await enableInundationInteract(App, true, true);
+  await registerFloodClickCallback(App, (res) => {
+    const info = extractFloodClickInfo(res);
+    if (!info) return;
+
+    console.log("🎯 点击网格 ID:", info.gridID);
+    console.log("📏 当前水深:", info.value);
+    console.log("📈 历史水深数组:", info.history);
+  });
 
   const coords: [number, number, number?][] = [
     [120.99202039340129, 31.379904416883047, 0],
@@ -863,6 +901,15 @@ async function handleCreateEqualRain() {
     App,
     "http://10.100.10.124:8090/inundation/config/Heatmap_Gen.json"
   );
+  await enableHeatmapInteract(App, true, true);
+  await registerHeatmapClickCallback(App, (res) => {
+    const info = extractHeatmapClickInfo(res);
+    if (!info) return;
+
+    console.log("🎯 点击网格 ID:", info.gridID);
+    console.log("📏 当前热力值:", info.value);
+    console.log("📈 历史热力值数组:", info.history);
+  });
 }
 
 async function handleCreateSewageTP() {
@@ -1067,6 +1114,13 @@ async function handlePipeLabelToggled(visible: boolean) {
       await focusPipelineSegment(App, info.eid, info.fId, 100);
       await addPipelineLabel(App, info.eid, info.fId, "PipeInfo");
       await addPipelineLabel(App, info.eid, info.fId, "Fluid");
+      if (isLiquidLevelSet.value) {
+        console.log("isLiquidLevelSet.value", isLiquidLevelSet.value);
+        await addPipelineLabel(App, info.eid, info.fId, "Fluid");
+      } else {
+        console.log("isLiquidLevelSet.value", isLiquidLevelSet.value);
+        await deletePipelineLabel(App, "Fluid");
+      }
     });
   } else {
     await enablePipelineClick(App, false);
@@ -1109,11 +1163,15 @@ async function handleLiquidlevelClicked(
   color: string
 ) {
   await setPipeLiquidLevel(App, pipeLiquidLevel, color, pipeType);
+  isLiquidLevelSet.value = true;
+  console.log("isLiquidLevelSet.value", isLiquidLevelSet.value);
 }
 
 async function handleResetLiquidlevelClicked() {
   await setPipeLiquidLevel(App, 0, "#000000", "rain");
   await setPipeLiquidLevel(App, 0, "#000000", "sewage");
+  isLiquidLevelSet.value = false;
+  console.log("isLiquidLevelSet.value", isLiquidLevelSet.value);
 }
 
 async function handleFlowdirectionClicked(
@@ -1229,11 +1287,29 @@ async function handleMenuInundationExecutePlan(plan: string, radio: string) {
       App,
       "http://10.100.10.124:8090/inundation/config/Heatmap_Gen.json"
     );
+    await enableHeatmapInteract(App, true, true);
+    await registerHeatmapClickCallback(App, (res) => {
+      const info = extractHeatmapClickInfo(res);
+      if (!info) return;
+
+      console.log("🎯 点击网格 ID:", info.gridID);
+      console.log("📏 当前热力值:", info.value);
+      console.log("📈 历史热力值数组:", info.history);
+    });
   } else if (radio === "water") {
     await createAndRunInundation(
       App,
       "http://10.100.10.124:8090/inundation/config/Inud_Gen.json"
     );
+    await enableInundationInteract(App, true, true);
+    await registerFloodClickCallback(App, (res) => {
+      const info = extractFloodClickInfo(res);
+      if (!info) return;
+
+      console.log("🎯 点击网格 ID:", info.gridID);
+      console.log("📏 当前水深:", info.value);
+      console.log("📈 历史水深数组:", info.history);
+    });
   }
 }
 

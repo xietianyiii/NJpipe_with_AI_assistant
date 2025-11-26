@@ -125,6 +125,113 @@ export async function deleteInundationAlgorithm(force: boolean = true): Promise<
 }
 
 /**
+ * 开启淹没点击事件（SetAlgorithmInteract）
+ *
+ * @param App - WDP 实例对象
+ * @param enable - 是否开启点击回调（true 开启 / false 关闭）
+ * @param returnHistory - 是否返回点击历史记录（true 返回 / false 不返回）
+ * @returns Promise<any>
+ */
+export async function enableInundationInteract(
+  App: any,
+  enable: boolean = true,
+  returnHistory: boolean = false
+): Promise<any> {
+  if (!App?.Customize?.RunCustomizeApi) {
+    console.error("❌ App 实例无效，缺少 Customize.RunCustomizeApi");
+    return null;
+  }
+
+  try {
+    console.log(`🔔 淹没点击事件：${enable ? "开启" : "关闭"}...`);
+
+    const jsondata = {
+      apiClassName: "FloodAPI",
+      apiFuncName: "SetAlgorithmInteract",
+      args: {
+        eid: inundationCache.algorithm.eid,
+        bClick: enable,
+        bReturnHistory: returnHistory,
+      },
+    };
+
+    const res = await App.Customize.RunCustomizeApi(jsondata);
+
+    if (res.success) {
+      console.log("✅ 淹没点击事件设置成功:", res);
+    } else {
+      console.warn("⚠️ 淹没点击事件设置失败:", res);
+    }
+
+    return res;
+  } catch (error) {
+    console.error("🚨 enableInundationInteract 执行出错:", error);
+    return null;
+  }
+}
+
+/**
+ * 注册淹没点击回调
+ *
+ * @param App - WDP 实例对象
+ * @param onClick - 回调函数，返回淹没点击结果
+ */
+export async function registerFloodClickCallback(
+  App: any,
+  onClick: (res: any) => void
+): Promise<void> {
+  if (!App?.Renderer?.RegisterSceneEvent) {
+    console.error("❌ App 实例无效，请检查 Renderer.RegisterSceneEvent");
+    return;
+  }
+
+  try {
+    console.log("🎧 注册淹没点击事件回调...");
+
+    await App.Renderer.RegisterSceneEvent([
+      {
+        name: "WimFloodClickReturnValueEvent",
+        func: async (res: any) => {
+          console.log("🌊 收到淹没点击返回值:", res);
+          if (onClick) onClick(res);
+        },
+      },
+    ]);
+
+    console.log("✅ 淹没点击事件回调注册成功");
+  } catch (error) {
+    console.error("🚨 registerFloodClickCallback 执行出错:", error);
+  }
+}
+
+/**
+ * 从淹没点击事件中提取gridid，淹没水深value,以及历史淹没水深history
+ *
+ * @param eventResult - WimFloodClickReturnValueEvent 回调中的 res
+ * @returns { gridID: number, value: number, history: number[] } | null
+ */
+export function extractFloodClickInfo(eventResult: any): { gridID: number, value: number, history: number[] } | null {
+  if (!eventResult || !eventResult.result) {
+    console.warn("⚠️ 点击事件格式异常，无法解析淹没信息:", eventResult);
+    return null;
+  }
+
+  const gridID = eventResult.result.GridID;
+  const value = eventResult.result.Value;
+  const history = eventResult.result.HistoryValue;
+
+  if (!gridID || !value || !history) {
+    console.warn("⚠️ 缺少 gridID, value 或 history, 返回信息不完整:", eventResult.result);
+    return null;
+  }
+
+  console.log(`🌊 点击提取成功 -> GridID: ${ gridID }, 当前水深: ${ value }, 历史记录(${ history.length }条)`);
+
+    return { gridID, value, history };
+}
+
+
+/**
  * 清除淹没缓存（不调用引擎）
  */
 export function clearInundationCache(): void {

@@ -970,8 +970,8 @@
             <el-input-number
               v-model="liquidLevel"
               :min="0"
-              :max="1"
-              :step="0.1"
+              :max="50"
+              :step="0.3"
               class="light-input"
               size="small"
             />
