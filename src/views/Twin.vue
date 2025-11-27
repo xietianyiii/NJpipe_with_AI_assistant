@@ -173,6 +173,8 @@ import {
   createMoveVehicle,
   deleteVehicle,
   startVehicleMove,
+  assignEidEntity,
+  createEntityMovePath,
 } from "@/utils/CreateMovePath";
 import {
   startPickPoint,
@@ -222,6 +224,8 @@ const showInfo = ref(false);
 const clickedGridID = ref<string>("359");
 const currentInuValue = ref<number>(51);
 const historyData = ref<number[]>([2, 1.2, 2.31, 1.34, 1.90, 2.30, 1.20]);
+const isLoading = ref(false);
+const showLoadingOverlay = ref(false);
 
 const currentLegendType = ref<"pump" | "rain" | "waterlog" | null>(null);
 const PumpPoiRegistry = ref<{ customId: string; stationType: string }[]>([]);
@@ -235,8 +239,8 @@ const FloodPumpCarRegistry = ref<{ customId: string; stationType: string }[]>(
 
 const shpAreaRegistry = ref<string[]>([]);
 
-let App = null;
-let inundationGenerator = null;
+let App: any = null;
+let inundationGenerator: InundationGenerator | null = null;
 let vehicleDirection: "forward" | "backward" = "forward";
 
 const loading = ref(true);
@@ -415,7 +419,7 @@ function registerRenderEvents() {
     },
     {
       name: "onStopedRenderCloud",
-      func: function (res) {
+      func: function (res: any) {
         loadingText.value = "渲染中断，请刷新重试。";
         loading.value = true;
       },
@@ -425,7 +429,7 @@ function registerRenderEvents() {
   App.Renderer.RegisterSceneEvent([
     {
       name: "OnMoveAlongPathEndEvent",
-      func: async function (res) {
+      func: async function (res: any) {
         console.log("🚗💨 覆盖物路径移动结束：", res);
 
         if (vehicleDirection === "forward") {
@@ -437,11 +441,9 @@ function registerRenderEvents() {
     },
     {
       name: "OnWdpSceneIsReady",
-      func: async function (res) {
+      func: async function () {
         // { "event_name": "OnWdpSceneIsReady", "result": { "progress": 100 } }
-        if (res.result.progress === 100) {
-          // 场景加载完成
-        }
+        // 场景加载完成
       },
     },
   ]);
@@ -604,7 +606,7 @@ async function handleCreateWaterLogging() {
   );
 
   await enableInundationInteract(App, true, true);
-  await registerFloodClickCallback(App, (res) => {
+  await registerFloodClickCallback(App, (res: any) => {
     const info = extractFloodClickInfo(res);
     if (!info) return;
 
@@ -635,7 +637,7 @@ async function handleCreateWaterLogging() {
     "http://10.100.10.124:8090/inundation/html/water4.html",
   ];
 
-  const curveUrls = [];
+  const curveUrls: string[] = [];
 
   WaterLoggingPoiRegistry.value = await createPois(
     App,
@@ -684,7 +686,7 @@ async function handleOnRoadIconClick() {
     "http://10.100.10.124:8090/inundation/config/Water_point_grid.json"
   );
   await enableInundationInteract(App, true, true);
-  await registerFloodClickCallback(App, (res) => {
+  await registerFloodClickCallback(App, (res: any) => {
     const info = extractFloodClickInfo(res);
     if (!info) return;
 
@@ -764,11 +766,9 @@ async function handleCreateFloodPumpCar() {
     "http://10.100.10.124:8090/inundation/assets/pngs/water_notok.png",
   ];
 
-  const infoUrls = [];
-
-  const curveUrls = [];
-
-  const stationTypes = [];
+  const infoUrls: string[] = [];
+  const curveUrls: string[] = [];
+  const stationTypes: string[] = [];
 
   FloodPumpCarRegistry.value = await createPois(
     App,
@@ -939,7 +939,7 @@ async function handleCreateEqualRain() {
     "http://10.100.10.124:8090/inundation/config/Heatmap_Gen.json"
   );
   await enableHeatmapInteract(App, true, true);
-  await registerHeatmapClickCallback(App, (res) => {
+  await registerHeatmapClickCallback(App, (res: any) => {
     const info = extractHeatmapClickInfo(res);
     if (!info) return;
 
@@ -1331,7 +1331,7 @@ async function handleMenuInundationExecutePlan(plan: string, radio: string) {
       "http://10.100.10.124:8090/inundation/config/Heatmap_Gen.json"
     );
     await enableHeatmapInteract(App, true, true);
-    await registerHeatmapClickCallback(App, (res) => {
+    await registerHeatmapClickCallback(App, (res: any) => {
       const info = extractHeatmapClickInfo(res);
       if (!info) return;
 

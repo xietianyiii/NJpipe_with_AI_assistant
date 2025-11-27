@@ -29,7 +29,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onMounted, onBeforeUnmount, nextTick } from "vue";
+import { ref, watch, onMounted, nextTick } from "vue";
 import * as echarts from "echarts";
 
 const props = defineProps({
@@ -205,18 +205,18 @@ const renderChart = () => {
       data: props.historyValues.map((_, i) => i + 1),
 
       axisLabel: { color: "#FFFFFF" }, // ✔ X轴文字白色
-      axisLine: { lineStyle: { color: "#CCCCCC" } }, // ✔ X轴轴线白灰色
+      axisLine: { lineStyle: { color: "transparent" } }, // ✔ X轴轴线无色
       axisTick: { lineStyle: { color: "#CCCCCC" } }, // ✔ X轴刻度线白灰色
     },
     yAxis: {
       type: "value",
       splitNumber: 2,
-      min: (value) => value.min * 0.8,
-      max: (value) => value.max * 1.2,
+      min: (value: { min: number }) => value.min * 0.8,
+      max: (value: { max: number }) => value.max * 1.2,
 
       axisLabel: {
         color: "#FFFFFF",
-        formatter: (value) => Math.round(value)
+        formatter: (value: number) => Math.round(value)
       }, 
     },
     series: [

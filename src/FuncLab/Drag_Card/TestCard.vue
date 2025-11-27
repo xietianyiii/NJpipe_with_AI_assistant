@@ -19,7 +19,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { ref, onMounted } from 'vue'
 
 const pos = ref({ x: window.innerWidth / 2 - 150, y: window.innerHeight / 2 - 100 })
 const isDragging = ref(false)

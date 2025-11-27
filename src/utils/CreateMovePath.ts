@@ -353,10 +353,13 @@ export async function startVehicleMove(
  * @param reverse - 是否反向移动
  * @param state - 初始状态（play/pause/stop）
  */
-export async function moveEntityAlongPath(
+export async function createEntityMovePath(
   App: any,
   entity: any,
   path: any,
+  pitch: number = 0,
+  yaw: number = 0,
+  roll: number = 0,
   duration: number = 20,
   loop: boolean = false,
   reverse: boolean = false,
@@ -380,14 +383,7 @@ export async function moveEntityAlongPath(
   try {
     console.log("🌀 准备让实体沿路径移动...");
 
-    // 1️⃣ 删除旧的 bound 移动对象
-    const old = await App.Scene.GetByCustomId(["common-moveObj-id"]);
-    if (old.success && old.result.length > 0) {
-      console.log("🧹 删除旧的移动对象");
-      await old.result[0].Delete();
-    }
-
-    // 2️⃣ 创建 Bound 移动对象
+    // 1️⃣ 创建 Bound 移动对象
     const moveObj = new App.Bound({
       moving: entity,
       path: path,
@@ -398,7 +394,7 @@ export async function moveEntityAlongPath(
         state,
       },
       customId: "common-moveObj-id",
-      rotator: { pitch: 0, yaw: 0, roll: 0 },
+      rotator: { pitch: pitch, yaw: yaw, roll: roll },
       offset: { left: 0, forward: 0, up: 0 },
     });
 
@@ -406,7 +402,7 @@ export async function moveEntityAlongPath(
 
     if (res.success) {
       console.log(
-        `🚗 实体沿路径移动已启动：时长=${duration}s 循环=${loop} 反向=${reverse} 状态=${state}`
+        `🚗 实体沿路径移动已启动：时长=${duration}s 循环=${loop} 反向=${reverse} 状态=${state} pitch=${pitch} yaw=${yaw} roll=${roll}`
       );
     } else {
       console.warn("⚠️ 启动移动失败:", res);
@@ -418,3 +414,56 @@ export async function moveEntityAlongPath(
     return null;
   }
 }
+
+/**
+ * 获取实体并设置 customId
+ *
+ * @param App - WDP 实例
+ * @param eid - 实体对象eid
+ * @param customid - 自定义id
+ */
+export async function assignEidEntity(
+    App: any,
+    eid: any,
+    customid: any,
+): Promise<any> {
+    if (!App?.Scene) {
+        console.error("❌ App 实例无效，请确认 Scene 模块存在");
+        return null;
+    }
+
+    if (!customid) {
+        console.error("❌ customid 不能为空！你必须传入一个实体customId");
+        return null;
+    }
+
+    if (!eid) {
+        console.error("❌ eid 不能为空！你必须传入一个实体对象eid");
+        return null;
+    }
+
+    try {
+        console.log("🌀 准备为eid分配customid...");
+
+        const eids = [eid];
+
+        const res = await App.Scene.GetByEids(eids);
+        console.log("实体查询结果：", res);
+
+        if (res.success && res.result.length > 0) {
+            const model = res.result[0];
+            model.customId = customid;  
+            console.log("✅ 已获取实体并设置 customId:", model);
+            return model;
+        } else {
+            console.warn("⚠️ 未找到对应 EID 的实体");
+            return null;
+        }
+    } catch (error) {
+        console.error("🚨 assignEidEntity 执行出错:", error);
+        return null;
+    }
+}
+
+
+
