@@ -133,7 +133,11 @@
               </div>
 
               <div class="card2-header-right">
-                <button class="card2-close-button" @click="onCloseCard2" v-show="isMoniCard2CloseButtonVisible">
+                <button
+                  class="card2-close-button"
+                  @click="onCloseCard2"
+                  v-show="isMoniCard2CloseButtonVisible"
+                >
                   ✕
                 </button>
               </div>
@@ -312,7 +316,7 @@
                   </div>
 
                   <div class="card3-label-container-bottom">
-                    <div class="card3-label-number">5</div>
+                    <div class="card3-label-number">1</div>
                     <div class="card3-label-unit">个</div>
                   </div>
                 </div>
@@ -340,11 +344,17 @@
                     p-id="31837"
                   ></path>
                 </svg>
-                <button class="card2-title-button" @click="onWaterLoggingClick">积水点监测</button>
+                <button class="card2-title-button" @click="onWaterLoggingClick">
+                  积水点监测
+                </button>
               </div>
 
               <div class="card2-header-right">
-                <button class="card2-close-button" @click="onCloseCard4" v-show="isMoniCard4CloseButtonVisible">
+                <button
+                  class="card2-close-button"
+                  @click="onCloseCard4"
+                  v-show="isMoniCard4CloseButtonVisible"
+                >
                   ✕
                 </button>
               </div>
@@ -399,8 +409,11 @@
                         handleRowClick(0, {
                           name: '华新',
                           type: '道路',
-                          location: [120.98035872737049, 31.357608642755856, 8.097580358203764],
-                          rotation: {pitch: 0, yaw: -28.84288215637207},
+                          location: [
+                            120.98035872737049, 31.357608642755856,
+                            8.097580358203764,
+                          ],
+                          rotation: { pitch: 0, yaw: -28.84288215637207 },
                         })
                       "
                     >
@@ -414,8 +427,14 @@
                         handleRowClick(1, {
                           name: '徐泾',
                           type: '道路',
-                          location: [120.93878115747329, 31.40277965289945, 19.263051030094488],
-                          rotation: {pitch: -8.587991714477539, yaw: -122.85664367675781},
+                          location: [
+                            120.93878115747329, 31.40277965289945,
+                            19.263051030094488,
+                          ],
+                          rotation: {
+                            pitch: -8.587991714477539,
+                            yaw: -122.85664367675781,
+                          },
                         })
                       "
                     >
@@ -429,8 +448,14 @@
                         handleRowClick(2, {
                           name: '青浦',
                           type: '道路',
-                          location: [120.9543526740766, 31.3668730376697, 8.884924935071846],
-                          rotation: {pitch: -4.369429111480713, yaw: 53.083290100097656},
+                          location: [
+                            120.9543526740766, 31.3668730376697,
+                            8.884924935071846,
+                          ],
+                          rotation: {
+                            pitch: -4.369429111480713,
+                            yaw: 53.083290100097656,
+                          },
                         })
                       "
                     >
@@ -444,8 +469,14 @@
                         handleRowClick(3, {
                           name: '秦家角',
                           type: '下立交',
-                          location: [120.99089207942629, 31.395743377701173, 14.217000251301368],
-                          rotation: {pitch: -11.87403678894043, yaw: 175.11178588867188},
+                          location: [
+                            120.99089207942629, 31.395743377701173,
+                            14.217000251301368,
+                          ],
+                          rotation: {
+                            pitch: -11.87403678894043,
+                            yaw: 175.11178588867188,
+                          },
                         })
                       "
                     >
@@ -461,6 +492,99 @@
           </div>
         </div>
       </div>
+
+      <!-- 河道监测可拖动弹窗 -->
+      <div
+        v-if="isRiverMoniPopupVisible"
+        class="river-moni-draggable-popup"
+        :style="{
+          top: riverMoniPosition.y + 'px',
+          left: riverMoniPosition.x + 'px',
+        }"
+        @mousedown="startRiverMoniDrag"
+        ref="riverMoniPopupRef"
+      >
+        <div class="popup-header">
+          河道监测
+          <button class="close-btn" @click="closeRiverMoniPopup">✕</button>
+        </div>
+
+        <div class="popup-body">
+          <!-- 第一行：当前河道水位值 -->
+          <div class="river-level-row">
+            <label class="river-level-label">当前河道水位值：</label>
+            <span class="river-level-value">{{ displayedRiverLevel }}</span>
+          </div>
+
+          <!-- 第二行：修改河道水位 -->
+          <div class="river-level-modify-row">
+            <label class="river-level-modify-label">修改河道水位：</label>
+            <el-input-number
+              v-model="riverLevel"
+              :min="-30"
+              :max="30"
+              step="0.1"
+              size="small"
+              class="river-level-input"
+            />
+          </div>
+
+          <!-- 第三行：操作按钮 -->
+          <div class="button-row">
+            <el-button
+              type="primary"
+              size="small"
+              @click="updateRiverLevel"
+              class="action-button"
+            >
+              <svg
+                t="1760585811887"
+                class="icon dispatch-icon"
+                viewBox="0 0 1024 1024"
+                version="1.1"
+                xmlns="http://www.w3.org/2000/svg"
+                p-id="95794"
+                width="30"
+                height="30"
+              >
+                <path
+                  d="M724.3 553.9L583.2 681c-23.3 23.3-61.5 23.3-84.9 0V343c23.3-23.3 61.5-23.3 84.9 0l141.1 126.1c23.3 23.3 23.3 61.5 0 84.8z"
+                  fill="#ffffff"
+                  p-id="95795"
+                ></path>
+                <path
+                  d="M508.3 553.9L367.2 681c-23.3 23.3-61.5 23.3-84.9 0V343c23.3-23.3 61.5-23.3 84.9 0l141.1 126.1c23.3 23.3 23.3 61.5 0 84.8z"
+                  fill="#ffffff"
+                  p-id="95796"
+                ></path>
+              </svg>
+            </el-button>
+            <el-button
+              type="warning"
+              size="small"
+              @click="resetRiverLevel"
+              class="action-button"
+            >
+              <svg
+                t="1763461177116"
+                class="icon"
+                viewBox="0 0 1024 1024"
+                version="1.1"
+                xmlns="http://www.w3.org/2000/svg"
+                p-id="27116"
+                width="15"
+                height="15"
+              >
+                <path
+                  d="M944.5 376.6c3.6-8.7 5.7-18.1 6.1-27.9 0-1.1 0-2.1 0.1-3.2v-1l-1.7-184c-0.4-45.3-37.3-81.8-82.5-81.8h-0.8c-41 0.4-74.7 30.5-80.8 69.8-9.8-7.1-19.9-13.8-30.3-20.1-102.5-62.1-223.1-80.6-339.5-52C298.8 104.8 200.5 177 138.4 279.5S57.8 502.6 86.4 619s100.7 214.7 203.2 276.8c71 43 150.7 65.1 231.7 65.1 35.9 0 72-4.3 107.8-13.1C745.5 919.2 843.8 847 905.9 744.5c23.6-39 11.2-89.8-27.8-113.4-39-23.6-89.8-11.2-113.4 27.8-81 133.7-255.7 176.6-389.5 95.6-64.8-39.2-110.4-101.4-128.5-174.9-18.1-73.6-6.4-149.7 32.9-214.5 80.1-132.1 251.6-175.6 384.7-98.4-36.3 9-63.1 41.9-62.7 80.9 0.4 45.3 37.3 81.8 82.5 81.8h0.8l184-1.7c31.3-0.3 58.5-18 72.2-43.9 1.2-2.2 2.2-4.5 3.2-6.8 0.1-0.1 0.2-0.3 0.2-0.4z"
+                  fill="#ffffff"
+                  p-id="27117"
+                ></path>
+              </svg>
+            </el-button>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -472,76 +596,276 @@ import { ref, onMounted } from "vue";
 const props = defineProps({
   isMoniCard2CloseButtonVisible: {
     type: Boolean,
-    default: false
+    default: false,
   },
   isMoniCard4CloseButtonVisible: {
     type: Boolean,
-    default: false
-  }
+    default: false,
+  },
 });
 
 // 定义事件，用于向父组件发送 create-poi 事件和更新按钮显示状态
 const emit = defineEmits<{
-  (e: 'create-poi'): void;
-  (e: 'delete-poi'): void;
-  (e: 'create-equal-rain'): void;
-  (e: 'create-water-logging'): void;
-  (e: 'delete-water-logging'): void;
-  (e: 'water-logging-row-click', data: any): void;
-  (e: 'update:isMoniCard2CloseButtonVisible', value: boolean): void;
-  (e: 'update:isMoniCard4CloseButtonVisible', value: boolean): void;
+  (e: "create-poi"): void;
+  (e: "delete-poi"): void;
+  (e: "create-equal-rain"): void;
+  (e: "create-water-logging"): void;
+  (e: "delete-water-logging"): void;
+  (e: "water-logging-row-click", data: any): void;
+  (e: "pipeline-level-click"): void;
+  (e: "river-level-updated", value: number): void;
+  (e: "update:isMoniCard2CloseButtonVisible", value: boolean): void;
+  (e: "update:isMoniCard4CloseButtonVisible", value: boolean): void;
 }>();
 
 const rainContainer = ref<HTMLElement | null>(null);
 const numDrops = 12;
 
+// 河道监测弹窗相关数据
+const isRiverMoniPopupVisible = ref(false);
+const riverLevel = ref(0); // 输入框的值
+const displayedRiverLevel = ref(1.1); // 显示的水位值，默认为0+1=1
+const riverMoniPosition = ref({ x: 1200, y: 500 }); // 默认位置
+const isRiverMoniDragging = ref(false);
+const riverMoniOffset = ref({ x: 0, y: 0 });
+const riverMoniPopupRef = ref<HTMLElement | null>(null);
+const riverMoniVelocity = ref({ x: 0, y: 0 }); // 用于跟踪拖动速度
+const riverMoniLastPosition = ref({ x: 0, y: 0 }); // 用于计算速度
+const riverMoniLastTime = ref(0); // 用于计算时间差
+
+// 手动边界配置（可以根据需要自定义这些值）
+const RIVER_MONI_BOUNDARIES = {
+  minX: 370, // 弹窗左边缘的最小X坐标
+  maxX: 1540, // 弹窗右边缘的最大X坐标
+  minY: 70, // 弹窗上边缘的最小Y坐标
+  maxY: 740, // 弹窗下边缘的最大Y坐标
+};
+
 // 处理表格行点击事件
 const handleRowClick = (rowIndex: number, rowData: any) => {
   // 只有当isMoniCard4CloseButtonVisible为true时才允许点击
   if (!props.isMoniCard4CloseButtonVisible) {
-    console.log('积水点监测功能未启用');
+    console.log("积水点监测功能未启用");
     return;
   }
-  
+
   console.log(`点击了第${rowIndex + 1}行:`, rowData);
-  emit('water-logging-row-click', rowData);
+  emit("water-logging-row-click", rowData);
 };
 
 // 处理card3-svg-container点击事件
 const handleCard3Click = (type: string) => {
   console.log(`点击了${type}`);
+
+  if (type === "管道液位") {
+    emit("pipeline-level-click");
+  } else if (type === "河道监测") {
+    // 显示河道监测弹窗
+    isRiverMoniPopupVisible.value = true;
+  }
 };
+
+// 河道监测弹窗拖动相关方法
+const startRiverMoniDrag = (e: MouseEvent) => {
+  if (!riverMoniPopupRef.value) return;
+  isRiverMoniDragging.value = true;
+  riverMoniOffset.value.x = e.clientX - riverMoniPosition.value.x;
+  riverMoniOffset.value.y = e.clientY - riverMoniPosition.value.y;
+
+  // 添加拖动样式
+  if (riverMoniPopupRef.value) {
+    riverMoniPopupRef.value.classList.add("dragging");
+  }
+
+  // 重置速度
+  riverMoniVelocity.value.x = 0;
+  riverMoniVelocity.value.y = 0;
+  riverMoniLastPosition.value.x = riverMoniPosition.value.x;
+  riverMoniLastPosition.value.y = riverMoniPosition.value.y;
+  riverMoniLastTime.value = Date.now();
+
+  document.addEventListener("mousemove", onRiverMoniDrag);
+  document.addEventListener("mouseup", stopRiverMoniDrag);
+};
+
+const onRiverMoniDrag = (e: MouseEvent) => {
+  if (!isRiverMoniDragging.value) return;
+
+  // 计算当前位置
+  let newX = e.clientX - riverMoniOffset.value.x;
+  let newY = e.clientY - riverMoniOffset.value.y;
+
+  // 使用手动边界配置
+  newX = Math.max(
+    RIVER_MONI_BOUNDARIES.minX,
+    Math.min(newX, RIVER_MONI_BOUNDARIES.maxX)
+  );
+  newY = Math.max(
+    RIVER_MONI_BOUNDARIES.minY,
+    Math.min(newY, RIVER_MONI_BOUNDARIES.maxY)
+  );
+
+  // 计算时间差
+  const now = Date.now();
+  const deltaTime = now - riverMoniLastTime.value;
+
+  if (deltaTime > 0) {
+    // 计算速度 (像素/毫秒)
+    riverMoniVelocity.value.x =
+      (newX - riverMoniLastPosition.value.x) / deltaTime;
+    riverMoniVelocity.value.y =
+      (newY - riverMoniLastPosition.value.y) / deltaTime;
+  }
+
+  // 更新位置和时间
+  riverMoniPosition.value.x = newX;
+  riverMoniPosition.value.y = newY;
+  riverMoniLastPosition.value.x = newX;
+  riverMoniLastPosition.value.y = newY;
+  riverMoniLastTime.value = now;
+};
+
+const stopRiverMoniDrag = () => {
+  isRiverMoniDragging.value = false;
+  document.removeEventListener("mousemove", onRiverMoniDrag);
+  document.removeEventListener("mouseup", stopRiverMoniDrag);
+
+  // 移除拖动样式并添加惯性样式
+  if (riverMoniPopupRef.value) {
+    riverMoniPopupRef.value.classList.remove("dragging");
+    riverMoniPopupRef.value.classList.add("inertia");
+
+    // 在动画结束后移除惯性样式
+    setTimeout(() => {
+      if (riverMoniPopupRef.value) {
+        riverMoniPopupRef.value.classList.remove("inertia");
+      }
+    }, 300);
+  }
+
+  // 启动惯性动画
+  riverMoniInertiaAnimation();
+};
+
+// 河道监测弹窗惯性动画函数
+const riverMoniInertiaAnimation = () => {
+  // 初始速度
+  let vx = riverMoniVelocity.value.x * 1000; // 转换为像素/秒
+  let vy = riverMoniVelocity.value.y * 1000;
+
+  // 物理参数
+  const friction = 0.92; // 摩擦系数 (更真实的摩擦力)
+  const minVelocity = 0.5; // 最小速度阈值
+  const deceleration = 0.98; // 减速度
+
+  // 上一帧时间
+  let lastTimestamp = 0;
+
+  // 动画函数
+  const animate = (timestamp: number) => {
+    if (!lastTimestamp) lastTimestamp = timestamp;
+    const deltaTime = Math.min((timestamp - lastTimestamp) / 1000, 0.1); // 转换为秒，最大0.1秒
+    lastTimestamp = timestamp;
+
+    // 应用减速度和摩擦力
+    vx *= deceleration * friction;
+    vy *= deceleration * friction;
+
+    // 计算新位置
+    let newX = riverMoniPosition.value.x + vx * deltaTime;
+    let newY = riverMoniPosition.value.y + vy * deltaTime;
+
+    // 使用手动边界配置
+    newX = Math.max(
+      RIVER_MONI_BOUNDARIES.minX,
+      Math.min(newX, RIVER_MONI_BOUNDARIES.maxX)
+    );
+    newY = Math.max(
+      RIVER_MONI_BOUNDARIES.minY,
+      Math.min(newY, RIVER_MONI_BOUNDARIES.maxY)
+    );
+
+    // 如果碰到边界，反转速度方向以产生反弹效果
+    if (
+      newX <= RIVER_MONI_BOUNDARIES.minX ||
+      newX >= RIVER_MONI_BOUNDARIES.maxX
+    ) {
+      vx = -vx * 0.3; // 反弹并减少速度
+    }
+    if (
+      newY <= RIVER_MONI_BOUNDARIES.minY ||
+      newY >= RIVER_MONI_BOUNDARIES.maxY
+    ) {
+      vy = -vy * 0.3; // 反弹并减少速度
+    }
+
+    // 更新位置
+    riverMoniPosition.value.x = newX;
+    riverMoniPosition.value.y = newY;
+
+    // 如果速度足够大，继续动画
+    if (Math.abs(vx) > minVelocity || Math.abs(vy) > minVelocity) {
+      requestAnimationFrame(animate);
+    }
+  };
+
+  // 开始动画
+  if (Math.abs(vx) > minVelocity || Math.abs(vy) > minVelocity) {
+    requestAnimationFrame(animate);
+  }
+};
+
+// 河道监测执行方法
+const updateRiverLevel = () => {
+  // 更新显示的水位值
+  displayedRiverLevel.value = 1.1 + riverLevel.value;
+  console.log("执行河道监测，当前水位值:", displayedRiverLevel.value);
+  // 触发一个事件通知父组件水位已更新
+  emit("river-level-updated", riverLevel.value);
+};
+
+// 河道监测重置方法
+const resetRiverLevel = () => {
+  console.log("重置河道监测");
+  riverLevel.value = 0; // 重置为默认值
+  displayedRiverLevel.value = 1.1; // 重置显示的水位值为1+0=1
+};
+
+// 关闭河道监测弹窗
+function closeRiverMoniPopup() {
+  isRiverMoniPopupVisible.value = false;
+}
 
 // 处理创建 POI 的点击事件
 function onCreatePoiClick() {
   // 显示关闭按钮
-  emit('update:isMoniCard2CloseButtonVisible', true);
-  emit('create-poi');
+  emit("update:isMoniCard2CloseButtonVisible", true);
+  emit("create-poi");
 }
 
 function onEqualRainClick() {
-  emit('create-equal-rain');
+  emit("create-equal-rain");
 }
 
 // 处理积水点监测按钮的点击事件
 function onWaterLoggingClick() {
   // 显示关闭按钮
-  emit('update:isMoniCard4CloseButtonVisible', true);
-  emit('create-water-logging');
+  emit("update:isMoniCard4CloseButtonVisible", true);
+  emit("create-water-logging");
 }
 
 // 处理关闭按钮的点击事件
 function onCloseCard2() {
   // 隐藏关闭按钮
-  emit('update:isMoniCard2CloseButtonVisible', false);
-  emit('delete-poi');
+  emit("update:isMoniCard2CloseButtonVisible", false);
+  emit("delete-poi");
 }
 
 // 处理card4关闭按钮的点击事件
 function onCloseCard4() {
   // 隐藏关闭按钮
-  emit('update:isMoniCard4CloseButtonVisible', false);
-  emit('delete-water-logging');
+  emit("update:isMoniCard4CloseButtonVisible", false);
+  emit("delete-water-logging");
 }
 
 onMounted(() => {
@@ -657,7 +981,206 @@ onMounted(() => {
 .card2-header {
   display: flex;
   justify-content: space-between;
+}
+
+/* 河道监测可拖动弹窗样式 */
+.river-moni-draggable-popup {
+  position: absolute;
+  width: 220px;
+  background-color: rgba(79, 99, 113, 0.7);
+  border: 2px solid rgba(248, 248, 248, 0.8);
+  border-radius: 12px;
+  box-shadow: 0 0 15px rgba(0, 191, 255, 0.8);
+  padding: 16px 20px;
+  font-size: 14px;
+  z-index: 1000;
+  backdrop-filter: blur(6px);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  pointer-events: auto;
+  user-select: none;
+  cursor: grab;
+  animation: popupAppear 0.3s ease-out;
+}
+
+.river-moni-draggable-popup:hover {
+  box-shadow: 0 5px 20px rgba(0, 191, 255, 1);
+}
+
+.river-moni-draggable-popup:active {
+  cursor: grabbing;
+}
+
+/* 惯性动画期间的样式 */
+.river-moni-draggable-popup.inertia {
+  transition: transform 0.2s ease, box-shadow 0.22s ease;
+}
+
+@keyframes popupAppear {
+  from {
+    opacity: 0;
+    transform: scale(0.8) translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.popup-header {
+  display: flex;
+  justify-content: space-between;
   align-items: center;
+  font-weight: bold;
+  font-size: 16px;
+  color: #ffffff;
+  text-shadow: 0 0 5px rgba(0, 0, 0, 0.7);
+  font-family: "SHJGSK";
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(248, 248, 248, 0.5);
+}
+
+.close-btn {
+  background: radial-gradient(
+    circle at 30% 30%,
+    rgba(5, 50, 66, 0.5),
+    rgba(0, 212, 255, 0.5)
+  );
+  border: 1px solid rgba(248, 248, 248, 0.8);
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  cursor: pointer;
+  color: #ffffff;
+  transition: all 0.3s ease;
+  box-shadow: 0 0 5px rgba(0, 191, 255, 0.5);
+}
+
+.close-btn:hover {
+  background: radial-gradient(
+    circle at 0% 60%,
+    #1a918b 0%,
+    #0099c8 60%,
+    #00e5ff 100%
+  );
+  box-shadow: 0 0 10px rgba(0, 255, 255, 1);
+  transform: scale(1.1);
+}
+
+.popup-body {
+  font-family: "YRDZST";
+  font-weight: 600;
+  color: #ffffff;
+  animation: contentFadeIn 0.3s ease-out 0.2s both;
+}
+
+/* 河道水位行样式 */
+.river-level-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 15px;
+  animation: rowFadeIn 0.3s ease-out 0.3s both;
+}
+
+.river-level-label {
+  font-size: 14px;
+  margin-right: 10px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  color: #ffffff;
+}
+
+.river-level-value {
+  font-size: 14px;
+  color: #ffffff;
+}
+
+/* 河道水位修改行样式 */
+.river-level-modify-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 15px;
+  animation: rowFadeIn 0.3s ease-out 0.3s both;
+}
+
+.river-level-modify-label {
+  font-size: 14px;
+  margin-right: 10px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  color: #ffffff;
+}
+
+.river-level-input {
+  flex-grow: 1;
+}
+
+.river-level-input::v-deep(.el-input__wrapper) {
+  background: rgba(5, 50, 66, 0.5);
+  border: 1px solid rgba(204, 166, 166, 0.8);
+  border-radius: 6px;
+  box-shadow: 0 0 5px rgba(94, 164, 187, 0.5);
+}
+
+.river-level-input::v-deep(.el-input__inner) {
+  color: #ffffff;
+}
+
+.button-row {
+  display: flex;
+  gap: 10px;
+  animation: rowFadeIn 0.3s ease-out 0.4s both;
+  align-items: center;
+}
+
+.action-button {
+  flex: 1;
+  font-family: "SHJGSK";
+  background-color: rgba(36, 74, 85, 0.7);
+  border: 1px solid rgba(170, 151, 151, 0.8);
+  border-radius: 6px;
+  box-shadow: 0 0 5px rgba(0, 191, 255, 0.5);
+  transition: all 0.3s ease;
+}
+
+.action-button:hover {
+  background: radial-gradient(
+    circle at 0% 60%,
+    #509e9a 0%,
+    #2f8ba7 60%,
+    #26757e 100%
+  );
+  box-shadow: 0 0 10px rgba(0, 255, 255, 1);
+}
+
+.action-button:active {
+  transform: scale(0.95);
+}
+
+@keyframes contentFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes rowFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .card2-header-left {
@@ -1654,4 +2177,32 @@ onMounted(() => {
 .top-menu-icon-item:hover + .top-menu-icon-label {
   opacity: 1;
 }
+
+:deep(.river-level-input .el-input__wrapper) {
+  background: linear-gradient(
+    to bottom,
+    rgba(49, 141, 169, 0.7),
+    rgba(79, 99, 113, 0.7)
+  );
+  border: 1px solid #2d687c;
+}
+
+:deep(.river-level-input .el-input-number__increase:hover),
+:deep(.river-level-input .el-input-number__decrease:hover) {
+  background-color: #005f8a;
+}
+
+:deep(.river-level-input .el-input-number__increase),
+:deep(.river-level-input .el-input-number__decrease) {
+  width: 22px;
+  background: linear-gradient(
+    to bottom,
+    rgba(49, 141, 169, 0.7),
+    rgba(79, 99, 113, 0.7)
+  );
+  color: white;
+  border: 1px solid #aaa4a4;
+}
+
+
 </style>
