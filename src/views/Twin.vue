@@ -53,6 +53,8 @@
         @water-logging-row-click="handleWaterLoggingRowClick"
         @create-water-logging="handleCreateWaterLogging"
         @delete-water-logging="handleDeleteWaterLogging"
+        @river-level-moni-clicked="handleRiverLevelMoniClicked"
+        @river-level-updated="handleRiverLevelUpdated"
       />
       <SimPanel
         v-else-if="activePanel === 'sim'"
@@ -207,7 +209,7 @@ import {
   deletePipelineLabel,
 } from "@/utils/CreatePipeline";
 import { createEffect, deleteEffect } from "@/utils/CreateSpecialEffect";
-import { updateCamera } from "@/utils/updateCamera";
+import { updateCamera, updateCamerabycustomId } from "@/utils/updateCamera";
 import DrainagePanel from "@/components/Drainage";
 import MoniPanel from "@/components/Moni";
 import SimPanel from "@/components/Sim";
@@ -223,7 +225,7 @@ const InuClickInfoCard = defineAsyncComponent(
 const showInfo = ref(false);
 const clickedGridID = ref<string>("359");
 const currentInuValue = ref<number>(51);
-const historyData = ref<number[]>([2, 1.2, 2.31, 1.34, 1.90, 2.30, 1.20]);
+const historyData = ref<number[]>([2, 1.2, 2.31, 1.34, 1.9, 2.3, 1.2]);
 const isLoading = ref(false);
 const showLoadingOverlay = ref(false);
 
@@ -242,6 +244,7 @@ const shpAreaRegistry = ref<string[]>([]);
 let App: any = null;
 let inundationGenerator: InundationGenerator | null = null;
 let vehicleDirection: "forward" | "backward" = "forward";
+let isVehicleCar: boolean = false;
 
 const loading = ref(true);
 const loadingText = ref("场景初始化中...");
@@ -398,7 +401,7 @@ function registerRenderEvents() {
         loadingText.value = "场景加载完成！";
         setTimeout(() => (loading.value = false), 800);
 
-        await new Promise((resolve) => setTimeout(resolve, 5000));
+        await new Promise((resolve) => setTimeout(resolve, 10000));
 
         // 创建管线
         await createPipeline(
@@ -407,7 +410,7 @@ function registerRenderEvents() {
           "rain"
         );
 
-        await new Promise((resolve) => setTimeout(resolve, 5000));
+        await new Promise((resolve) => setTimeout(resolve, 10000));
         await setPipelineHeight(App, 2, "rain");
         // 创建管线
         await createPipeline(
@@ -432,7 +435,7 @@ function registerRenderEvents() {
       func: async function (res: any) {
         console.log("🚗💨 覆盖物路径移动结束：", res);
 
-        if (vehicleDirection === "forward") {
+        if (vehicleDirection === "forward" && isVehicleCar) {
           await onArriveWaterPoint(); // 到达 B
         } else {
           await onArriveBackStart(); // 返回 A
@@ -665,6 +668,27 @@ async function handleDeleteWaterLogging() {
   showLegendCard.value = false;
 }
 
+async function handleRiverLevelMoniClicked() {
+  console.log("📊 收到河道水位监测按钮点击事件");
+  await assignEidEntity(App, "-9149062459682734585", "moni-river-id");
+  await new Promise((r) => setTimeout(r, 300));
+  await updateCamerabycustomId(App, "moni-river-id");
+}
+
+const pathRiver: [number, number, number][] = [
+  [121.01783446872899, 31.381095073015935, 0.9],
+  [121.01783446872899, 31.381096073015936, 10],
+  [121.01783446872899, 31.381097073015935, 20],
+  [121.01783446872899, 31.381098073015935, 30],
+];
+
+async function handleRiverLevelUpdated(level: number) {
+  console.log("📊 收到河道水位更新事件:", level);
+  const riverModel = await assignEidEntity(App,"-9149062459682734585","moni-river-id");
+  const riverMovePath = await createMovePath(App,pathRiver,"#32CD32","scan_line",true);
+  await createEntityMovePath(App,riverModel, riverMovePath, 0,90,0,5,true);
+}
+
 // 处理积水点点击事件
 async function handleWaterLoggingRowClick(data: any) {
   console.log("📢 收到积水点点击事件:", data);
@@ -804,6 +828,7 @@ async function handleDeleteFloodPumpCar() {
   await deleteVehicle(App);
   await deleteAllMovePaths(App);
   await deleteMovePath(App);
+  isVehicleCar = false;
   showLegendCard.value = false;
 }
 
@@ -906,6 +931,7 @@ async function handleDispatchExecutionClicked() {
   await deleteAllMovePaths(App);
 
   vehicleDirection = "forward";
+  isVehicleCar = true;
   await createMovePath(App, path0, "#32CD32", "scan_line");
   await createMoveVehicle(App, path0[0]);
   await startVehicleMove(App, undefined, undefined, 5, false, "play");
@@ -925,6 +951,7 @@ async function onArriveBackStart() {
   console.log("🚗💨 返回起始点");
   await deleteVehicle(App);
   await deleteMovePath(App);
+  isVehicleCar = false;
 }
 
 async function handleCreateEqualRain() {

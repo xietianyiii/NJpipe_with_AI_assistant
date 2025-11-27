@@ -613,6 +613,7 @@ const emit = defineEmits<{
   (e: "delete-water-logging"): void;
   (e: "water-logging-row-click", data: any): void;
   (e: "pipeline-level-click"): void;
+  (e: "river-level-moni-clicked"): void;
   (e: "river-level-updated", value: number): void;
   (e: "update:isMoniCard2CloseButtonVisible", value: boolean): void;
   (e: "update:isMoniCard4CloseButtonVisible", value: boolean): void;
@@ -662,6 +663,8 @@ const handleCard3Click = (type: string) => {
   } else if (type === "河道监测") {
     // 显示河道监测弹窗
     isRiverMoniPopupVisible.value = true;
+    // 触发水位更新事件，传递当前水位值
+    emit("river-level-moni-clicked");
   }
 };
 
