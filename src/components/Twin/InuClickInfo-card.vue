@@ -1,6 +1,6 @@
 <template>
   <div
-    v-if="visible"
+    v-show="visible"
     class="draggable-card"
     :style="{ top: position.y + 'px', left: position.x + 'px' }"
     @mousedown="startDrag"
@@ -216,8 +216,8 @@ const renderChart = () => {
 
       axisLabel: {
         color: "#FFFFFF",
-        formatter: (value: number) => Math.round(value)
-      }, 
+        formatter: (value: number) => Math.round(value),
+      },
     },
     series: [
       {
