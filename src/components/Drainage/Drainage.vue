@@ -725,7 +725,8 @@
       <div
         class="tool-item show-toggle"
         id="toggleVisibility"
-        :class="{ active: activeToolIndex === 3 }"
+        :class="{ active: isVisibilityToolActive }"
+        @click="() => handleToolClick(3)"
       >
         <!-- 默认图标 -->
         <svg
@@ -949,6 +950,47 @@
           </div>
         </div>
 
+        <div v-if="activeToolIndex === 3" class="light-box">
+          <!-- 第1行：模式选择器 -->
+          <div class="light-row">
+            <label class="light-label">管网类型：</label>
+            <el-select
+              v-model="visiblePieType"
+              placeholder="请选择管网类型"
+              class="light-select"
+              size="small"
+            >
+              <el-option label="雨水管" value="rain" />
+              <el-option label="污水管" value="sewage" />
+            </el-select>
+          </div>
+
+          <!-- 第2行：亮度输入 -->
+          <div class="light-row">
+            <label class="light-label">特定管段：</label>
+            <el-input-tag
+              v-model="visiblePipeIds"
+              collapse-tags
+              collapse-tags-tooltip
+              max-collapse-tags="1"
+              tag-type="info"
+              tag-effect="dark"
+              clearable
+              size="small"
+              placeholder="请输入指定管段的ID"
+              aria-label="Please click the Enter key after input"
+            />
+            <!-- <el-input-number
+              v-model="lightIntensity"
+              :min="0"
+              :max="100"
+              :step="1"
+              class="light-input"
+              size="small"
+            /> -->
+          </div>
+        </div>
+
         <div v-if="activeToolIndex === 4" class="light-box">
           <!-- 第1行：模式选择器 -->
           <div class="light-row">
@@ -970,8 +1012,8 @@
             <el-input-number
               v-model="liquidLevel"
               :min="0"
-              :max="50"
-              :step="0.3"
+              :max="2"
+              :step="0.2"
               class="light-input"
               size="small"
             />
@@ -1072,21 +1114,25 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from "vue";
 import { ElMessage } from "element-plus";
+import type { TagProps } from "element-plus";
 
 const hightPieType = ref("rain");
-const elevationValue = ref("200");
+const elevationValue = ref("8");
 const lightPieType = ref("rain");
 const lightIntensity = ref(50);
 const lightColor = ref("");
 const liquidPipeType = ref("rain");
-const liquidLevel = ref(50);
-const liquidColor = ref("");
+const liquidLevel = ref(1);
+const liquidColor = ref("#00BFFF");
 const flowPieType = ref("rain");
 const flowStyle = ref("0");
 const flowDirection = ref("1");
 const flowColor = ref("");
+const visiblePieType = ref("rain");
+const visiblePipeIds = ref<string[]>([]);
 
 const activeToolIndex = ref<number | null>(null);
+const isVisibilityToolActive = ref(false); // 单独跟踪显示/隐藏图标的active状态
 
 const toolActions = [
   // 对应第 0 个图标：显示“剖切”和“重置”
@@ -1105,7 +1151,10 @@ const toolActions = [
     { label: "重置", action: () => handleResetPipeLight() },
   ],
   // 第 3 个图标：不显示任何子按钮
-  [],
+  [
+    { label: "显示", action: () => handlePipeVisible() },
+    { label: "隐藏", action: () => handlePipeHidden() },
+  ],
   [
     { label: "液位", action: () => handleLiquidLevel() },
     { label: "重置", action: () => handleResetLiquidLevel() },
@@ -1141,7 +1190,7 @@ const emit = defineEmits<{
   (e: "resetpipelightClicked"): void;
   (e: "liquidlevelClicked", type: string, level: number, color: string): void;
   (e: "resetliquidlevelClicked"): void;
-  (e: "pipevisibilityToggled", visible: boolean): void;
+  (e: "pipevisibilityToggled", visible: boolean, pipeType: string, pipeIds: string[]): void;
   (
     e: "flowdirectionClicked",
     type: string,
@@ -1168,6 +1217,10 @@ const handleResetDigCut = () => {
 };
 
 const handleLift = () => {
+  const toggleBtn = document.getElementById("toggleVisibility");
+  if (toggleBtn) {
+    toggleBtn.classList.add("active");
+  }
   emit("pipeliftClicked", hightPieType.value, elevationValue.value);
 };
 
@@ -1186,6 +1239,20 @@ const handlePipeLight = () => {
 
 const handleResetPipeLight = () => {
   emit("resetpipelightClicked");
+};
+
+const handlePipeVisible = () => {
+  // 确保图标保持active状态
+  isVisibilityToolActive.value = true;
+  emit("pipevisibilityToggled", true, visiblePieType.value, visiblePipeIds.value);
+};
+
+const handlePipeHidden = () => {
+  // 确保图标保持active状态
+  isVisibilityToolActive.value = false;
+  // 同时关闭右侧的弹窗
+  activeToolIndex.value = null;
+  emit("pipevisibilityToggled", false, visiblePieType.value, visiblePipeIds.value);
 };
 
 const handleLiquidLevel = () => {
@@ -1230,8 +1297,17 @@ const handleToolClick = (index: number) => {
     emit("pipeLabelToggled", isPipeLabelVisible.value);
     return;
   }
-  
-  activeToolIndex.value = activeToolIndex.value === index ? null : index;
+
+  // 如果是第3个图标（显示/隐藏切换图标），使用单独的状态管理
+  if (index === 3) {
+    // 设置显示/隐藏图标为active状态（不会切换为非active）
+    isVisibilityToolActive.value = true;
+    // 同时更新activeToolIndex以显示子菜单
+    activeToolIndex.value = activeToolIndex.value === index ? null : index;
+  } else {
+    // 其他图标按原有逻辑处理，但不影响显示/隐藏图标的active状态
+    activeToolIndex.value = activeToolIndex.value === index ? null : index;
+  }
 };
 
 const handleFirstToolClick = () => {
@@ -1240,10 +1316,6 @@ const handleFirstToolClick = () => {
 
   if (activeToolIndex.value === 0) {
     ElMessage.primary("请在场景中点击取点");
-    const toggleBtn = document.getElementById("toggleVisibility");
-    if (toggleBtn) {
-      toggleBtn.classList.add("active");
-    }
     // 通知父组件点击了开挖按钮
     emit("digClicked");
   }
@@ -1413,7 +1485,7 @@ function closeDefectCard() {
 
 // 结构性缺陷数据
 const structuralDefects = [
-  { id: "5c16b0ae", location: "东城区管段A-12", name: "结垢" },
+  { id: "f790a225", location: "东城区管段A-12", name: "结垢" },
   { id: "3617050b", location: "西城区管段B-05", name: "脱节" },
   { id: "022fdead", location: "南城区管段C-07", name: "脱节" },
 ];
@@ -1447,13 +1519,13 @@ onMounted(() => {
   if (rainBar) rainBar.style.flex = `${rainwaterRatio * 10}`;
   if (sewageBar) sewageBar.style.flex = `${sewageRatio * 10}`;
 
-  const toggleBtn = document.getElementById("toggleVisibility");
-  // Drainage.vue
-  toggleBtn?.addEventListener("click", () => {
-    toggleBtn.classList.toggle("active");
-    const isActive = toggleBtn.classList.contains("active");
-    emit("pipevisibilityToggled", isActive); // 发出当前状态
-  });
+  // const toggleBtn = document.getElementById("toggleVisibility");
+  // // Drainage.vue
+  // toggleBtn?.addEventListener("click", () => {
+  //   toggleBtn.classList.toggle("active");
+  //   const isActive = toggleBtn.classList.contains("active");
+  //   emit("pipevisibilityToggled", isActive); // 发出当前状态
+  // });
 
   // 获取元素
   const toolbar = document.querySelector(".toolbar") as HTMLElement;
@@ -2964,6 +3036,32 @@ onMounted(() => {
   color: #ffffff !important;
   font-family: "YRDZST", sans-serif !important;
   font-size: 15px !important;
+}
+
+.light-row :deep(.el-input-tag) {
+  background-color: rgba(91, 140, 173, 0.6) !important;
+}
+
+.light-row :deep(.el-input-tag__wrapper) {
+  background-color: #5b8cad99 !important;
+  border: 1px solid #1ebdd0 !important;
+  border-radius: 6px !important;
+  box-shadow: #b5bbda 0 0 3px !important;
+  backdrop-filter: blur(3px);
+  transition: all 0.3s ease;
+  min-height: 28px;
+  min-width: 150px;
+}
+
+.light-row :deep(.el-input-tag input::placeholder) {
+  color: #c9b4b4 !important;
+  font-family: "SHJGSK", sans-serif !important;
+  font-size: 12px !important;
+}
+
+.light-row :deep(.el-input-tag .el-tag) {
+  background-color: #1ebdd0 !important;  /* 自定义颜色 */
+  border-color: #5B8CAD !important;
 }
 
 .light-row :deep(.el-select__selected-item) {

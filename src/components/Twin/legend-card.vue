@@ -31,7 +31,7 @@ import type { CheckboxValueType } from 'element-plus'
 
 // 定义 props
 const props = defineProps<{
-  legendType?: 'pump' | 'rain' | 'waterlog' | null;
+  legendType?: 'pump' | 'rain' | 'waterlog' | 'pipe' | null;
 }>();
 
 // 定义 emits
@@ -43,6 +43,7 @@ const emit = defineEmits<{
 const pumpOptions = ['雨水泵站', '污水泵站']
 const rainOptions = ['>50mm', '<50mm'];
 const waterlogOptions = ['0mm', '1-15mm', '16-30mm', '30-50mm'];
+const pipeOptions = ['<50%', '50%-100%', '100%', '液位异常', '离线'];
 
 // 根据面板类型计算当前选项
 const cities = computed(() => {
@@ -50,6 +51,7 @@ const cities = computed(() => {
     case 'rain': return rainOptions;
     case 'waterlog': return waterlogOptions;
     case 'pump': return pumpOptions;
+    case 'pipe': return pipeOptions;
     default: return [];
   }
 });

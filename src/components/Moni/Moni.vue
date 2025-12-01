@@ -204,23 +204,36 @@
           <!-- 水位监测 -->
           <div class="card card-3">
             <div class="card-header">
-              <svg
-                t="1759140862845"
-                class="card-header-icon"
-                viewBox="0 0 1024 1024"
-                version="1.1"
-                xmlns="http://www.w3.org/2000/svg"
-                p-id="31836"
-                width="14"
-                height="12"
-              >
-                <path
-                  d="M0 355.388235h355.388235V0H0v355.388235zM668.611765 0v355.388235H1024V0H668.611765zM0 1024h355.388235V668.611765H0V1024z m668.611765 0H1024V668.611765H668.611765V1024z"
-                  fill="#1ebdd0"
-                  p-id="31837"
-                ></path>
-              </svg>
-              水位监测
+              <div class="card2-header">
+                <div class="card2-header-left">
+                  <svg
+                    t="1759140862845"
+                    class="card-header-icon water-monitoring-icon"
+                    viewBox="0 0 1024 1024"
+                    version="1.1"
+                    xmlns="http://www.w3.org/2000/svg"
+                    p-id="31836"
+                    width="14"
+                    height="12"
+                  >
+                    <path
+                      d="M0 355.388235h355.388235V0H0v355.388235zM668.611765 0v355.388235H1024V0H668.611765zM0 1024h355.388235V668.611765H0V1024z m668.611765 0H1024V668.611765H668.611765V1024z"
+                      fill="#1ebdd0"
+                      p-id="31837"
+                    ></path>
+                  </svg>
+                  水位监测
+                </div>
+                <div class="card2-header-right">
+                  <button
+                    class="card2-close-button"
+                    @click="onCloseCard3"
+                    v-show="isMoniCard3CloseButtonVisible"
+                  >
+                    ✕
+                  </button>
+                </div>
+              </div>
             </div>
             <div class="card3-content">
               <div class="card3-left-content">
@@ -598,6 +611,10 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  isMoniCard3CloseButtonVisible: {
+    type: Boolean,
+    default: false,
+  },
   isMoniCard4CloseButtonVisible: {
     type: Boolean,
     default: false,
@@ -613,9 +630,11 @@ const emit = defineEmits<{
   (e: "delete-water-logging"): void;
   (e: "water-logging-row-click", data: any): void;
   (e: "pipeline-level-click"): void;
+  (e: "delete-pipe-liquidlevel"): void;
   (e: "river-level-moni-clicked"): void;
   (e: "river-level-updated", value: number): void;
   (e: "update:isMoniCard2CloseButtonVisible", value: boolean): void;
+  (e: "update:isMoniCard3CloseButtonVisible", value: boolean): void;
   (e: "update:isMoniCard4CloseButtonVisible", value: boolean): void;
 }>();
 
@@ -659,6 +678,8 @@ const handleCard3Click = (type: string) => {
   console.log(`点击了${type}`);
 
   if (type === "管道液位") {
+    // 显示关闭按钮
+    emit("update:isMoniCard3CloseButtonVisible", true);
     emit("pipeline-level-click");
   } else if (type === "河道监测") {
     // 显示河道监测弹窗
@@ -862,6 +883,13 @@ function onCloseCard2() {
   // 隐藏关闭按钮
   emit("update:isMoniCard2CloseButtonVisible", false);
   emit("delete-poi");
+}
+
+// 处理card3关闭按钮的点击事件
+function onCloseCard3() {
+  // 隐藏关闭按钮
+  emit("update:isMoniCard3CloseButtonVisible", false);
+  emit("delete-pipe-liquidlevel");
 }
 
 // 处理card4关闭按钮的点击事件
@@ -1286,6 +1314,10 @@ onMounted(() => {
   margin-right: 3px;
   margin-left: 3px;
   filter: drop-shadow(0 0 6px #00bfff);
+}
+
+.water-monitoring-icon {
+  margin-right: 9px;
 }
 
 .card1-content {

@@ -52,7 +52,7 @@ export async function createPipeline(App: any, shpUrl: string, key: string): Pro
                         { StandardName: "PipeSurfaceAltitudeEnd", FeatureName: "zdg" },
                         { StandardName: "PipeBurialDepthStart", FeatureName: "qdm" },
                         { StandardName: "PipeBurialDepthEnd", FeatureName: "zdm" },
-                        { StandardName: "PipeDiameter", FeatureName: "gj", "Expression": "param(gj)*3" },
+                        { StandardName: "PipeDiameter", FeatureName: "gj", "Expression": "param(gj)*2" },
                         {
                             StandardName: "PipeMaterial",
                             FeatureName: "cz",
@@ -152,6 +152,7 @@ export async function setPipelineHeight(App: any, height: number, key: string): 
  * @param intensity - 高亮强度（数值，如 15）
  * @param types - 管网类型数组（如 ["SN", "SL", "ZT"]）
  * @param key - 管网标识（如 "rain", "sewage"）
+ * @param fIds - 可选的 FID 数组，用于指定特定的 FID 进行高亮（默认值为空数组）
  */
 export async function setPipelineHighlight(
     App: any,
@@ -159,7 +160,8 @@ export async function setPipelineHighlight(
     color: string,
     intensity: number,
     types: string[],
-    key: string
+    key: string,
+    fIds?: string[],
 ): Promise<void> {
     if (!App) {
         console.warn("⚠️ App 实例无效");
@@ -182,7 +184,7 @@ export async function setPipelineHighlight(
                 highLightType: highlight ? 1 : 0, // 1=开，0=关
                 highLightColor: color, // 高亮颜色
                 eid: pipeline.eid, // 当前管网对象的 EID
-                fIds: [],
+                fIds: fIds || [],
                 types: types || [], // 需要高亮的类型
             },
         };
@@ -213,6 +215,7 @@ export async function setPipelineVisible(
     visible: boolean,
     key: string,
     types?: string[],
+    fIds?: string[],
 ): Promise<void> {
     if (!App) {
         console.warn("⚠️ App 实例无效");
@@ -235,7 +238,7 @@ export async function setPipelineVisible(
                 guid: "",
                 visible, // true 显示, false 隐藏
                 eid: pipeline.eid,
-                fIds: [],
+                fIds: fIds || [],
                 types: types || [], // 可以指定类型，不传则作用于全部
             },
         };
@@ -244,7 +247,7 @@ export async function setPipelineVisible(
 
         if (res.success) {
             console.log(
-                `✅ 管网显隐设置成功: ${visible ? "已显示" : "已隐藏"} (${types?.length ? types.join(", ") : "全部类型"})`
+                `✅ 管网显隐设置成功: ${visible ? "已显示" : "已隐藏"} (${types?.length ? types.join(", ") : "全部类型"} ${fIds?.length ? `FID: ${fIds.join(", ")}` : ""})`
             );
         } else {
             console.error("❌ 管网显隐设置失败:", res);
@@ -517,7 +520,7 @@ export async function focusPipelineSegment(
     App: any,
     eid: string,
     fId: string,
-    distanceFactor: number = 5,
+    distanceFactor: number = 200,
     pitch: number = -30,
     yaw: number = 0,
     flyTime: number = 1

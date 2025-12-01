@@ -44,8 +44,10 @@
       <MoniPanel
         v-else-if="activePanel === 'moni'"
         :is-moni-card2-close-button-visible="isMoniCard2CloseButtonVisible"
+        :is-moni-card3-close-button-visible="isMoniCard3CloseButtonVisible"
         :is-moni-card4-close-button-visible="isMoniCard4CloseButtonVisible"
         @update:isMoniCard4CloseButtonVisible="handleMoniCard4Visible"
+        @update:isMoniCard3CloseButtonVisible="handleMoniCard3Visible"
         @update:isMoniCard2CloseButtonVisible="handleMoniCard2Visible"
         @create-poi="handleCreateRainPoi"
         @delete-poi="handleDeleteRainPoi"
@@ -55,6 +57,8 @@
         @delete-water-logging="handleDeleteWaterLogging"
         @river-level-moni-clicked="handleRiverLevelMoniClicked"
         @river-level-updated="handleRiverLevelUpdated"
+        @pipeline-level-click="handlePipelineLevelClick"
+        @delete-pipe-liquidlevel="handleDeletePipeLiquidlevel"
       />
       <SimPanel
         v-else-if="activePanel === 'sim'"
@@ -119,7 +123,18 @@
         <span v-if="!isLoading">更新相机</span>
       </button>
 
-      <button @click="showInfo = true">打开内涝卡片</button>
+      <button @click="handleUpdateWeather">
+        <span v-if="!isLoading">切换天气</span>
+      </button>
+
+      <!-- <button @click="handleGetPrecision">
+        <span v-if="!isLoading">获取精度</span>
+      </button>
+
+      <button @click="handleSetPrecision">
+        <span v-if="!isLoading">设置精度150</span>
+      </button> -->
+      <!-- <button @click="showInfo = true">打开内涝卡片</button> -->
     </div>
 
     <InuClickInfoCard
@@ -229,7 +244,9 @@ const historyData = ref<number[]>([2, 1.2, 2.31, 1.34, 1.9, 2.3, 1.2]);
 const isLoading = ref(false);
 const showLoadingOverlay = ref(false);
 
-const currentLegendType = ref<"pump" | "rain" | "waterlog" | null>(null);
+const currentLegendType = ref<"pump" | "rain" | "waterlog" | "pipe" | null>(
+  null
+);
 const PumpPoiRegistry = ref<{ customId: string; stationType: string }[]>([]);
 const RainPoiRegistry = ref<{ customId: string; stationType: string }[]>([]);
 const WaterLoggingPoiRegistry = ref<
@@ -238,6 +255,9 @@ const WaterLoggingPoiRegistry = ref<
 const FloodPumpCarRegistry = ref<{ customId: string; stationType: string }[]>(
   []
 );
+const PipeLiquidlevelPoiRegistry = ref<
+  { customId: string; stationType: string }[]
+>([]);
 
 const shpAreaRegistry = ref<string[]>([]);
 
@@ -263,6 +283,7 @@ const isDraCard4CloseButtonVisible = ref(false);
 
 // 控制MoniPanel中按钮的显示状态
 const isMoniCard2CloseButtonVisible = ref(false);
+const isMoniCard3CloseButtonVisible = ref(false);
 const isMoniCard4CloseButtonVisible = ref(false);
 
 // 控制SimPanel中按钮的显示状态
@@ -306,6 +327,14 @@ function handleMoniCard2Visible(val: boolean) {
   isMoniCard2CloseButtonVisible.value = val;
   if (val) {
     currentLegendType.value = "rain";
+    showLegendCard.value = true;
+  }
+}
+
+function handleMoniCard3Visible(val: boolean) {
+  isMoniCard3CloseButtonVisible.value = val;
+  if (val) {
+    currentLegendType.value = "pipe";
     showLegendCard.value = true;
   }
 }
@@ -392,7 +421,7 @@ function registerRenderEvents() {
         // 设置天气为 LightRain
         try {
           await App.Environment.GetSceneWeather();
-          await App.Environment.SetSceneWeather("Overcast", 3, false);
+          await App.Environment.SetSceneWeather("PartlyCloudy", 3, false);
           console.log("🌤️ 天气已设置为阴天");
         } catch (error) {
           console.error("❌ 设置天气失败:", error);
@@ -411,13 +440,14 @@ function registerRenderEvents() {
         );
 
         await new Promise((resolve) => setTimeout(resolve, 10000));
-        await setPipelineHeight(App, 2, "rain");
         // 创建管线
         await createPipeline(
           App,
           "//10.66.12.53/x.public/exchange/TMP_THJ/WIM/kunshan/pipeline_network_20251021_110401.shp",
           "sewage"
         );
+
+        await setPipelineHeight(App, 2, "rain");
       },
     },
     {
@@ -487,6 +517,34 @@ async function handleUpdateCamera() {
   if (points.length > 0) {
     console.log("📍 用户取到的点坐标：", points);
   }
+}
+
+// const weatherList = ["auto","Sunny", "Cloudy", "PartlyCloudy", "Overcast", "LightRain","ModerateRain", "HeavyRain","lightSnow","ModerateSnow","HeavySnow", "Foggy", "Sand", "Haze"];
+const weatherList = ["Sunny", "Cloudy", "PartlyCloudy", "Overcast"];
+let weatherIndex = 0;
+
+async function handleUpdateWeather() {
+  const currentWeather = await App.Environment.GetSceneWeather();
+  console.log(currentWeather);
+
+  weatherIndex = (weatherIndex + 1) % weatherList.length;
+
+  const nextWeather = weatherList[weatherIndex];
+
+  // 设置天气
+  await App.Environment.SetSceneWeather(nextWeather);
+
+  console.log("设置为新天气：", nextWeather);
+}
+
+async function handleGetPrecision() {
+  const res = await App.Setting.GetScreenPercentage();
+  console.log(res);
+}
+
+async function handleSetPrecision() {
+  const res = await App.Setting.SetScreenPercentage(150);
+  console.log(res);
 }
 
 async function handleCreatePumpPoi() {
@@ -668,6 +726,46 @@ async function handleDeleteWaterLogging() {
   showLegendCard.value = false;
 }
 
+async function handlePipelineLevelClick() {
+  console.log("📊 收到管道液位监测按钮点击事件");
+  const position: [number, number, number] = [
+    121.02740457338311, 31.319578935523527, 1708.6214824575459,
+  ];
+  const rotation = { pitch: -81.04249572753906, yaw: 75.2750015258789 };
+  await updateCamera(App, position, rotation, 2);
+
+  const coords: [number, number, number?][] = [
+    [121.03120687625339, 31.31798575512674, 200],
+    [121.02335571739293, 31.319388784695875, 200],
+    [121.01775852191246, 31.317829698318537, 200],
+    [121.02926870825598, 31.32434520332544, 200],
+    [121.02241698194085, 31.31619352080823, 200],
+  ];
+
+  const stationTypes = ["<50%", "50%-100%", "100%", "液位异常", "离线"];
+
+  const infoUrls = [""];
+
+  const curveUrls = [""];
+
+  PipeLiquidlevelPoiRegistry.value = await createPois(
+    App,
+    coords,
+    undefined,
+    undefined,
+    infoUrls,
+    curveUrls,
+    stationTypes,
+    openStationCurve,
+    [450, 200]
+  );
+}
+
+async function handleDeletePipeLiquidlevel() {
+  await handleDeleteAllPois(App, PipeLiquidlevelPoiRegistry.value);
+  showLegendCard.value = false;
+}
+
 async function handleRiverLevelMoniClicked() {
   console.log("📊 收到河道水位监测按钮点击事件");
   await assignEidEntity(App, "-9149062459682734585", "moni-river-id");
@@ -684,9 +782,19 @@ const pathRiver: [number, number, number][] = [
 
 async function handleRiverLevelUpdated(level: number) {
   console.log("📊 收到河道水位更新事件:", level);
-  const riverModel = await assignEidEntity(App,"-9149062459682734585","moni-river-id");
-  const riverMovePath = await createMovePath(App,pathRiver,"#32CD32","scan_line",true);
-  await createEntityMovePath(App,riverModel, riverMovePath, 0,90,0,5,true);
+  const riverModel = await assignEidEntity(
+    App,
+    "-9149062459682734585",
+    "moni-river-id"
+  );
+  const riverMovePath = await createMovePath(
+    App,
+    pathRiver,
+    "#32CD32",
+    "scan_line",
+    true
+  );
+  await createEntityMovePath(App, riverModel, riverMovePath, 0, 90, 0, 5, true);
 }
 
 // 处理积水点点击事件
@@ -1038,6 +1146,7 @@ async function handleCreatePipeline() {
   );
   App.Environment.SetSceneWeather("ModerateRain", 3, false);
   await setPipelineHeight(App, 200, "rain");
+
   await setPipelineHighlight(
     App,
     true,
@@ -1046,6 +1155,19 @@ async function handleCreatePipeline() {
     ["SN", "SL", "ZT"],
     "rain"
   );
+
+  const fids1 = ["6603a9a6", "33cd68b6", "6145cd43", "f790a225", "5c16b0ae"];
+  const fids2 = [
+    "d4a384ac",
+    "022fdead",
+    "e27aa883",
+    "20f67f62",
+    "66cad8af",
+    "43c45d5e",
+  ];
+  await setPipelineHighlight(App, true, "#0000FF", 100, [""], "rain", fids1);
+
+  await setPipelineHighlight(App, true, "#FFD700", 100, [""], "rain", fids2);
 
   await createPipeline(
     App,
@@ -1170,9 +1292,20 @@ async function handleResetPipelightClicked() {
   );
 }
 
-async function handlePipeVisibilityToggled(visible: boolean) {
-  await setPipelineVisible(App, visible, "rain", ["SN", "SL", "ZT"]);
-  await setPipelineVisible(App, visible, "sewage", ["SN", "SL", "ZT"]);
+async function handlePipeVisibilityToggled(visible: boolean, pipeType?: string, pipeIds?: string[]) {
+  // 如果pipeType和pipeIds都存在，则设置特定管段的可见性
+  if (pipeType && pipeIds && pipeIds.length > 0) {
+    await setPipelineVisible(App, visible, pipeType, [], pipeIds);
+  } 
+  // 如果只有pipeType，则设置该类型管网的可见性
+  else if (pipeType) {
+    await setPipelineVisible(App, visible, pipeType, ["SN", "SL", "ZT"]);
+  }
+  // 如果都没有，则默认设置所有管网的可见性
+  else {
+    await setPipelineVisible(App, visible, "rain", ["SN", "SL", "ZT"]);
+    await setPipelineVisible(App, visible, "sewage", ["SN", "SL", "ZT"]);
+  }
 }
 
 async function handlePipeLabelToggled(visible: boolean) {
@@ -1181,7 +1314,11 @@ async function handlePipeLabelToggled(visible: boolean) {
     await registerPipelineClickEvent(App, async (res) => {
       const info = extractPipelineClickInfo(res);
       if (!info) return;
-      await focusPipelineSegment(App, info.eid, info.fId, 100);
+
+      currentPipeEid.value = info.eid;
+      currentPipeFid.value = info.fId;
+
+      await focusPipelineSegment(App, info.eid, info.fId, 150);
       await addPipelineLabel(App, info.eid, info.fId, "PipeInfo");
       await addPipelineLabel(App, info.eid, info.fId, "Fluid");
       if (isLiquidLevelSet.value) {
@@ -1190,6 +1327,8 @@ async function handlePipeLabelToggled(visible: boolean) {
       } else {
         console.log("isLiquidLevelSet.value", isLiquidLevelSet.value);
         await deletePipelineLabel(App, "Fluid");
+        currentPipeEid.value = info.eid;
+        currentPipeFid.value = info.fId;
       }
     });
   } else {
@@ -1197,6 +1336,8 @@ async function handlePipeLabelToggled(visible: boolean) {
     await deletePipelineLabel(App, "PipeInfo");
     await deletePipelineLabel(App, "WellInfo");
     await deletePipelineLabel(App, "Fluid");
+    currentPipeEid.value = null;
+    currentPipeFid.value = null;
   }
 }
 
@@ -1234,8 +1375,20 @@ async function handleLiquidlevelClicked(
 ) {
   await setPipeLiquidLevel(App, pipeLiquidLevel, color, pipeType);
   isLiquidLevelSet.value = true;
+
+  if (currentPipeEid.value && currentPipeFid.value) {
+    await addPipelineLabel(
+      App,
+      currentPipeEid.value,
+      currentPipeFid.value,
+      "Fluid"
+    );
+  }
   console.log("isLiquidLevelSet.value", isLiquidLevelSet.value);
 }
+
+const currentPipeEid = ref<string | null>(null);
+const currentPipeFid = ref<string | null>(null);
 
 async function handleResetLiquidlevelClicked() {
   await setPipeLiquidLevel(App, 0, "#000000", "rain");
@@ -1373,9 +1526,13 @@ async function handleMenuInundationExecutePlan(plan: string, radio: string) {
       showInfo.value = true;
     });
   } else if (radio === "water") {
+    // await createAndRunInundation(
+    //   App,
+    //   "http://10.100.10.124:8090/inundation/config/Inud_Gen.json"
+    // );
     await createAndRunInundation(
       App,
-      "http://10.100.10.124:8090/inundation/config/Inud_Gen.json"
+      "http://10.100.10.124:8090/inundation/config/hugeArea_Test/Grid_1990/Inud_Gen_1990.json"
     );
     await enableInundationInteract(App, true, true);
     await registerFloodClickCallback(App, (res) => {
