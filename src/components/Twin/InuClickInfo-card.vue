@@ -12,8 +12,8 @@
     </div>
 
     <div class="card-body">
-      <div class="row">当前时序水深值: {{ Inuvalue.toFixed(4) }}</div>
-      <div class="row">历史水深曲线</div>
+      <div class="row">当前时序水深值: {{ Inuvalue.toFixed(4) }} m</div>
+      <div class="row">历史水深曲线: 单位(m)</div>
       <div class="row">
         <div ref="chartRef" style="width: 270px; height: 150px"></div>
       </div>
@@ -192,6 +192,10 @@ const renderChart = () => {
     tooltip: {
       trigger: "axis",
       axisPointer: { type: "cross" },
+      formatter: (params: any[]) => {
+        const data = params[0];
+        return `${data.name}<br/>${data.marker} ${data.seriesName}: ${data.data.toFixed(4)}`;
+      }
     },
     grid: {
       top: 20,
@@ -202,11 +206,17 @@ const renderChart = () => {
     xAxis: {
       type: "category",
       boundaryGap: false,
-      data: props.historyValues.map((_, i) => i + 1),
+      data: props.historyValues.map((_, i) => `9.${i + 1}`),
 
       axisLabel: { color: "#FFFFFF" }, // ✔ X轴文字白色
       axisLine: { lineStyle: { color: "transparent" } }, // ✔ X轴轴线无色
       axisTick: { lineStyle: { color: "#CCCCCC" } }, // ✔ X轴刻度线白灰色
+      name: "日期",
+      nameLocation: "end",
+      nameTextStyle: {
+        color: "#FFFFFF",
+        fontSize: 10,
+      },
     },
     yAxis: {
       type: "value",
@@ -216,8 +226,15 @@ const renderChart = () => {
 
       axisLabel: {
         color: "#FFFFFF",
-        formatter: (value: number) => Math.round(value),
+        formatter: (value: number) => value.toFixed(1),
       },
+      name: "水深(m)",
+      nameLocation: "end",
+      nameTextStyle: {
+        color: "#FFFFFF",
+        fontSize: 10,
+      },
+      nameGap: 20,
     },
     series: [
       {
@@ -263,7 +280,7 @@ watch(
       if (chartInstance) {
         chartInstance.setOption({
           xAxis: {
-            data: props.historyValues.map((_, i) => i + 1),
+            data: props.historyValues.map((_, i) => `9.${i + 1}`),
           },
           series: [
             {
