@@ -1,45 +1,24 @@
 <template>
-  <div
-    v-show="visible"
-    class="draggable-card"
-    :style="{ top: position.y + 'px', left: position.x + 'px' }"
-    @mousedown="startDrag"
-    ref="cardRef"
-  >
+  <div v-show="visible" class="draggable-card" :style="{ top: position.y + 'px', left: position.x + 'px' }"
+    @mousedown="startDrag" ref="cardRef">
     <div class="card-header">
       <span class="card-header-text">上传管网 </span>
       <button class="close-btn" @click="$emit('close')">✕</button>
     </div>
 
     <div class="card-body">
-      <el-steps
-        style="max-width: 600px"
-        :space="280"
-        :active="props.pipeUploadStepActive"
-        align-center
-        finish-status="success"
-      >
+      <el-steps style="max-width: 600px" :space="280" :active="props.pipeUploadStepActive" align-center
+        finish-status="success">
         <el-step title="上传数据" />
         <el-step title="映射字段" />
         <el-step title="自动加载" />
       </el-steps>
 
       <transition name="slide-fade" mode="out-in">
-        <el-upload
-          class="pipe-upload-demo"
-          drag
-          action="http://127.0.0.1:3000/upload/"
-          :on-success="handleUploadSuccess"
-          :on-error="handleUploadError"
-          :before-upload="beforeUpload"
-          :auto-upload="false"
-          :on-change="handleFileChange"
-          :on-remove="handleFileRemove"
-          multiple
-          v-if="props.pipeUploadStepActive === 0"
-          ref="pipeUpload"
-          key="step-0"
-        >
+        <el-upload class="pipe-upload-demo" drag action="http://127.0.0.1:3000/upload/"
+          :on-success="handleUploadSuccess" :on-error="handleUploadError" :before-upload="beforeUpload"
+          :auto-upload="false" :on-change="handleFileChange" :on-remove="handleFileRemove" multiple
+          v-if="props.pipeUploadStepActive === 0" ref="pipeUpload" key="step-0">
           <el-icon class="el-icon--upload"><upload-filled /></el-icon>
           <div class="el-upload__text">
             将文件拖放到此处或 <em>点击上传</em>
@@ -51,34 +30,16 @@
               </div>
               <!-- <el-button type="primary" @click="handleManualUpload">手动上传</el-button> -->
 
-              <el-button
-                v-show="isUploading"
-                type="primary"
-                size="small"
-                :loading="isUploadLoading"
-                @click="handleManualUpload"
-                class="upload-button"
-              >
-                <svg
-                  t="1760585811887"
-                  class="icon dispatch-icon"
-                  viewBox="0 0 1024 1024"
-                  version="1.1"
-                  xmlns="http://www.w3.org/2000/svg"
-                  p-id="95794"
-                  width="30"
-                  height="30"
-                >
+              <el-button v-show="isUploading" type="primary" size="small" :loading="isUploadLoading"
+                @click="handleManualUpload" class="upload-button">
+                <svg t="1760585811887" class="icon dispatch-icon" viewBox="0 0 1024 1024" version="1.1"
+                  xmlns="http://www.w3.org/2000/svg" p-id="95794" width="30" height="30">
                   <path
                     d="M724.3 553.9L583.2 681c-23.3 23.3-61.5 23.3-84.9 0V343c23.3-23.3 61.5-23.3 84.9 0l141.1 126.1c23.3 23.3 23.3 61.5 0 84.8z"
-                    fill="#ffffff"
-                    p-id="95795"
-                  ></path>
+                    fill="#ffffff" p-id="95795"></path>
                   <path
                     d="M508.3 553.9L367.2 681c-23.3 23.3-61.5 23.3-84.9 0V343c23.3-23.3 61.5-23.3 84.9 0l141.1 126.1c23.3 23.3 23.3 61.5 0 84.8z"
-                    fill="#ffffff"
-                    p-id="95796"
-                  ></path>
+                    fill="#ffffff" p-id="95796"></path>
                 </svg>
               </el-button>
             </div>
@@ -93,25 +54,12 @@
               <span class="header-item">标准名称</span>
               <span class="header-item">用户字段</span>
             </div>
-            <div
-              class="mapping-row"
-              v-for="(field, index) in fieldMappings"
-              :key="index"
-            >
+            <div class="mapping-row" v-for="(field, index) in fieldMappings" :key="index">
               <span class="field-item">{{ field.name }}</span>
               <span class="standard-item">{{ field.standardName }}</span>
-              <el-select
-                class="input-item"
-                v-model="field.mappedName"
-                placeholder="请选择字段"
-                size="small"
-              >
-                <el-option
-                  v-for="fieldName in UserDatafieldNames"
-                  :key="fieldName"
-                  :label="fieldName"
-                  :value="fieldName"
-                />
+              <el-select class="input-item" v-model="field.mappedName" placeholder="请选择字段" size="small">
+                <el-option v-for="fieldName in UserDatafieldNames" :key="fieldName" :label="fieldName"
+                  :value="fieldName" />
               </el-select>
             </div>
             <div class="mapping-actions">
@@ -124,12 +72,7 @@
 
         <div v-else-if="props.pipeUploadStepActive === 2" key="step-2">
           <div class="loading-step-container">
-            <el-slider
-              class="loading-step-slider"
-              v-model="loadingProgress"
-              size="small"
-              :show-tooltip="false"
-            />
+            <el-slider class="loading-step-slider" v-model="loadingProgress" size="small" :show-tooltip="false" />
           </div>
         </div>
 
@@ -158,6 +101,8 @@ import { UploadFilled } from "@element-plus/icons-vue";
 import { ElMessage } from "element-plus";
 import axios from "axios";
 import * as echarts from "echarts";
+import { ShapefileLoader } from "@/utils/ShapefileLoader";
+const loader = new ShapefileLoader();
 
 const props = defineProps({
   visible: { type: Boolean, default: false },
@@ -403,13 +348,14 @@ const beforeUpload = (file: File) => {
     alert("文件不能超过5MB");
     return false; // 返回 false 阻止上传
   }
-  return true; // 返回 true 表示允许上传
+  return false; // 返回 true 表示允许上传
 };
-
+const uploadFileList = ref([]);
 // 处理文件选择变化
 const handleFileChange = (file: any, fileList: any[]) => {
   // 只要 fileList 里有东西，就显示按钮
   isUploading.value = fileList.length > 0;
+  uploadFileList.value = fileList;
 };
 
 const handleFileRemove = (file: any, fileList: any[]) => {
@@ -419,10 +365,17 @@ const handleFileRemove = (file: any, fileList: any[]) => {
 const handleManualUpload = async () => {
   isUploadLoading.value = true;
   // 1秒后移除loading状态
-  await new Promise((resolve) => setTimeout(resolve, 1000));
-  isUploadLoading.value = false;
-  if (pipeUpload.value) {
-    pipeUpload.value.submit(); // 手动触发上传
+  // await new Promise((resolve) => setTimeout(resolve, 1000));
+  // isUploadLoading.value = false;
+  // if (pipeUpload.value) {
+  //   pipeUpload.value.submit(); // 手动触发上传
+  // }
+
+  const geojson = await loader.processFiles(uploadFileList.value.map(f => f.raw));
+  if (geojson) {
+    // 提取属性表
+    const attributes = loader.extractAttributeTable(geojson);
+    console.log("属性表:", attributes);
   }
 };
 
@@ -488,6 +441,7 @@ const saveFieldMappings = () => {
     opacity: 0;
     transform: scale(0.8) translateY(20px);
   }
+
   to {
     opacity: 1;
     transform: scale(1) translateY(0);
@@ -516,11 +470,9 @@ const saveFieldMappings = () => {
 }
 
 .close-btn {
-  background: radial-gradient(
-    circle at 30% 30%,
-    rgba(5, 50, 66, 0.5),
-    rgba(0, 212, 255, 0.5)
-  );
+  background: radial-gradient(circle at 30% 30%,
+      rgba(5, 50, 66, 0.5),
+      rgba(0, 212, 255, 0.5));
   border: 1px solid rgba(248, 248, 248, 0.8);
   border-radius: 50%;
   width: 24px;
@@ -536,12 +488,10 @@ const saveFieldMappings = () => {
 }
 
 .close-btn:hover {
-  background: radial-gradient(
-    circle at 0% 60%,
-    #1a918b 0%,
-    #0099c8 60%,
-    #00e5ff 100%
-  );
+  background: radial-gradient(circle at 0% 60%,
+      #1a918b 0%,
+      #0099c8 60%,
+      #00e5ff 100%);
   box-shadow: 0 0 10px rgba(0, 255, 255, 1);
   transform: scale(1.1);
 }
@@ -564,11 +514,9 @@ const saveFieldMappings = () => {
   padding: 10px 0;
   opacity: 1;
   border-radius: 8px;
-  background: linear-gradient(
-    180deg,
-    rgba(36, 104, 190, 0.06) 0%,
-    rgba(0, 144, 211, 0.6) 105%
-  );
+  background: linear-gradient(180deg,
+      rgba(36, 104, 190, 0.06) 0%,
+      rgba(0, 144, 211, 0.6) 105%);
   box-sizing: border-box;
   border: 0.81px solid rgba(65, 129, 225, 0.3);
 }
@@ -617,6 +565,7 @@ const saveFieldMappings = () => {
     opacity: 0;
     transform: translateY(10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -661,12 +610,10 @@ const saveFieldMappings = () => {
 }
 
 .upload-button:hover {
-  background: radial-gradient(
-    circle at 0% 60%,
-    #509e9a 0%,
-    #2f8ba7 60%,
-    #26757e 100%
-  );
+  background: radial-gradient(circle at 0% 60%,
+      #509e9a 0%,
+      #2f8ba7 60%,
+      #26757e 100%);
   box-shadow: 0 0 10px rgba(0, 255, 255, 1);
 }
 
@@ -681,7 +628,8 @@ const saveFieldMappings = () => {
 
 .upload-footer {
   display: flex;
-  justify-content: space-between; /* 左右分布 */
+  justify-content: space-between;
+  /* 左右分布 */
   align-items: center;
   width: 100%;
 }
@@ -878,9 +826,11 @@ const saveFieldMappings = () => {
   0% {
     transform: scale(0);
   }
+
   70% {
     transform: scale(1.2);
   }
+
   100% {
     transform: scale(1);
   }
@@ -891,10 +841,12 @@ const saveFieldMappings = () => {
     transform: scale(0);
     opacity: 0;
   }
+
   70% {
     transform: scale(1.1);
     opacity: 1;
   }
+
   100% {
     transform: scale(1);
     opacity: 1;
@@ -906,11 +858,10 @@ const saveFieldMappings = () => {
     transform: translateY(-20px) rotate(0deg);
     opacity: 1;
   }
+
   100% {
     transform: translateY(160px) rotate(360deg);
     opacity: 0;
   }
 }
-
-
 </style>
