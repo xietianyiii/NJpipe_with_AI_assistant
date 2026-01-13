@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+  <meta charset="UTF-8">
+  <title>环形饼图示例</title>
+  <style>
+    .chart-card {
+      position: relative;
+      display: inline-block;
+      /* 由内容决定尺寸 */
+    }
+
+    .chart-card .bg {
+      display: block;
+      /* 去掉 img 默认下边距 */
+    }
+
+    #main {
+      position: absolute;
+      width: 120px;
+      height: 120px;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 2;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="chart-card">
+    <img class="bg" src="./chart_back.png" />
+    <div id="main"></div>
+  </div>
+
+
+  <!-- 引入 ECharts -->
+  <script src="https://unpkg.com/echarts@5.5.0/dist/echarts.min.js"></script>
+  <script>
+    var chartDom = document.getElementById('main');
+    var myChart = echarts.init(chartDom);
+    var option;
+
+    option = {
+      tooltip: {
+        show: false
+      },
+      legend: {
+        show: false
+      },
+      series: [
+        {
+          name: '访问来源',
+          type: 'pie',
+          radius: ['55%', '66%'],
+          avoidLabelOverlap: false,
+          padAngle: 8,
+          itemStyle: {
+            borderRadius: 0,
+            borderWidth: 0
+          },
+          label: {
+            show: false,
+            position: 'center'
+          },
+          emphasis: {
+            scale: true,
+            scaleSize: 2,
+            label: {
+              show: true,
+              fontSize: 5,
+              fontWeight: 'bold'
+            }
+          },
+          labelLine: {
+            show: false
+          },
+          data: [
+            {
+              value: 12, name: '雨水泵站', itemStyle: {
+                color: '#4D99FC' // 设置雨水泵站的颜色为金色
+              }
+            },
+            {
+              value: 4, name: '雨水开泵', itemStyle: {
+                color: '#61E0D7' // 设置雨水开泵的颜色为海蓝色
+              }
+            },
+          ]
+        }
+      ]
+    };
+
+    option && myChart.setOption(option);
+  </script>
+</body>
+
+</html>
