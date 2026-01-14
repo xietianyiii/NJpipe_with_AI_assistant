@@ -9,13 +9,9 @@
 
     <!-- 表体 -->
     <div class="base-table-row-container">
-      <div class="base-table-row base-table-grid" v-for="(row, idx) in data" :key="idx">
-        <span
-          v-for="col in columns"
-          :key="col.key"
-          class="cell"
-          :class="`${col.key}-cell`"
-        >
+      <div class="base-table-row base-table-grid" v-for="(row, idx) in data" :key="idx" :class="{ clickable }"
+        @click="clickable && emit('row-click', idx, row)">
+        <span v-for="col in columns" :key="col.key" class="cell" :class="`${col.key}-cell`">
           {{ row[col.key] }}
         </span>
       </div>
@@ -30,7 +26,13 @@ defineProps<{
     label: string
   }[]
   data: Record<string, any>[]
+  clickable?: boolean
 }>()
+
+const emit = defineEmits<{
+  (e: "row-click", rowIndex: number, rowData: any): void
+}>()
+
 </script>
 
 <style scoped>
@@ -38,13 +40,13 @@ defineProps<{
   display: grid;
   grid-template-columns: repeat(var(--col-count), minmax(0, 1fr));
   align-items: center;
-  column-gap: 12px; /* 可按需调整 */
+  column-gap: 12px;
+  /* 可按需调整 */
   justify-items: center;
 }
 
 .base-table-header {
-  background: url("@/assets/pngs/BG/sidebar/card/card6-svg/table-header.png")
-    no-repeat center / contain;
+  background: url("@/assets/pngs/BG/sidebar/card/card6-svg/table-header.png") no-repeat center / contain;
   height: 32px;
   margin-top: 5px;
   margin-bottom: 5px;
@@ -56,9 +58,9 @@ defineProps<{
 }
 
 .base-table-row-container {
-  width: 100%; 
+  width: 100%;
   margin: 0 auto;
-  padding: 0 30px; 
+  padding: 0 30px;
   box-sizing: border-box;
 }
 
@@ -77,6 +79,14 @@ defineProps<{
 }
 
 .base-table-row:hover {
+  background: rgba(16, 93, 117, 0.8);
+}
+
+.base-table-row.clickable {
+  cursor: pointer;
+}
+
+.base-table-row.clickable:hover {
   background: rgba(16, 93, 117, 0.8);
 }
 

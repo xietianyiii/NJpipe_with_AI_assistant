@@ -30,7 +30,8 @@
 
         <div class="sidebar-right-card card2">
           <BaseCard title="雨量监测" titleType="right" :contentBg="contentLbg1" width="344px" height="96px"
-            contentClass="Rcard2-content-row">
+            contentClass="Rcard2-content-row" clickable @titleClick="onCreateRainPoiClick"
+            @titleCancel="onCloseRainPoiClick">
             <div class="Rcard2-left-container">
               <div class="Rcard2-icon">
                 <img src="@/assets/pngs/BG/sidebar/Moni/card2/rain.png" />
@@ -54,7 +55,7 @@
 
         <div class="sidebar-right-card card3">
           <BaseCard title="水位监测" titleType="right" :contentBg="contentLbg1" width="344px" height="120px"
-            contentClass="Rcard3-content-row">
+            contentClass="Rcard3-content-row" clickable @titleCancel="onCloseWaterMoniClick">
             <div class="Rcard3-column-container">
               <div class="Rcard3-icon">
                 <img src="@/assets/pngs/BG/sidebar/Moni/card3/road.png" />
@@ -66,7 +67,8 @@
 
             <div class="Rcard3-column-container">
               <div class="Rcard3-icon">
-                <img src="@/assets/pngs/BG/sidebar/Moni/card3/pipe.png" />
+                <img src="@/assets/pngs/BG/sidebar/Moni/card3/pipe.png" class="water-moni-btn"
+                  @click="onOpenPipeLiquidClick" />
                 <NumberUnit value="7" unit="个" />
                 管道液位
               </div>
@@ -74,9 +76,10 @@
 
             <div class="Rcard3-column-container">
               <div class="Rcard3-icon">
-                <img src="@/assets/pngs/BG/sidebar/Moni/card3/river.png" />
+                <img src="@/assets/pngs/BG/sidebar/Moni/card3/river.png" class="water-moni-btn"
+                  @click="onOpenLakeMoniClick" />
                 <NumberUnit value="1" unit="个" />
-                河道监测
+                湖泊监测
               </div>
             </div>
           </BaseCard>
@@ -84,7 +87,8 @@
 
         <div class="sidebar-right-card card4">
           <BaseCard title="积水点监测" titleType="right" :contentBg="contentLbg1" width="344px" height="310px"
-            contentClass="Rcard4-content-row">
+            contentClass="Rcard4-content-row" clickable @titleClick="onCreateWaterlogPoiClick"
+            @titleCancel="onCloseWaterlogPoiClick">
             <div class="card4-row1">
               <div class="card4-row1-icon">
                 <img class="card4-row1-icon-img" src="@/assets/pngs/BG/sidebar/card/card4-svg/row1-icon.png" />
@@ -98,7 +102,7 @@
               </div>
             </div>
             <div class="card4-row2">
-              <ReuseTable :columns="defectColumns" :data="defectRows" />
+              <ReuseTable :columns="defectColumns" :data="defectRows" clickable @row-click="onWaterlogRowClick" />
             </div>
           </BaseCard>
         </div>
@@ -116,6 +120,16 @@ import ReuseTable from "@/components/ReuseCop/Table.vue";
 import NumberUnit from "@/components/ReuseCop/NumberUnit.vue";
 import BaseCard from "@/components/ReuseCop/BaseCard.vue";
 
+const emit = defineEmits<{
+  (e: "create-rain-poi"): void;
+  (e: "close-rain-poi"): void;
+  (e: "open-pipe-liquid"): void;
+  (e: "open-lake-moni"): void;
+  (e: "close-water-moni"): void;
+  (e: "create-waterlog-poi"): void;
+  (e: "close-waterlog-poi"): void;
+}>();
+
 const defectRows = ref([
   { id: "华新", time: "06-01 14:00", level: "12.5", type: "道路" },
   { id: "徐泾", time: "06-01 14:00", level: "10.8", type: "道路" },
@@ -131,6 +145,38 @@ const defectColumns = [
   { key: "type", label: "积水点类型" },
 ]
 
+const onWaterlogRowClick = (rowIndex: number, rowData: any) => {
+  console.log("点击行索引:", rowIndex);
+  console.log("行数据:", rowData);
+};
+
+function onCreateRainPoiClick() {
+  emit("create-rain-poi");
+}
+
+function onCloseRainPoiClick() {
+  emit("close-rain-poi");
+}
+
+function onOpenPipeLiquidClick() {
+  emit("open-pipe-liquid");
+}
+
+function onOpenLakeMoniClick() {
+  emit("open-lake-moni");
+}
+
+function onCloseWaterMoniClick() {
+  emit("close-water-moni");
+}
+
+function onCreateWaterlogPoiClick() {
+  emit("create-waterlog-poi");
+}
+
+function onCloseWaterlogPoiClick() {
+  emit("close-waterlog-poi");
+}
 </script>
 
 <style scoped>
@@ -437,4 +483,13 @@ const defectColumns = [
   -webkit-text-fill-color: transparent;
 }
 
+.water-moni-btn {
+  cursor: pointer;
+  transition: transform 0.2s ease, filter 0.2s ease;
+}
+
+.water-moni-btn:hover {
+  transform: scale(1.05);
+  filter: drop-shadow(0 0 4px rgba(0, 191, 255, 0.6));
+}
 </style>

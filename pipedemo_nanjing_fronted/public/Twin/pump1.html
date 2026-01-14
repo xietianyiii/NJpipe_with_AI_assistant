@@ -3,46 +3,67 @@
 
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=500, height=320, user-scalable=no" />
+    <meta name="viewport" content="width=250, height=180, user-scalable=no" />
     <title>泵站监测信息</title>
     <style>
-        body {
-            margin: 0;
-            font-family: "Microsoft YaHei", sans-serif;
-            background-color: rgba(79, 99, 113, 0.7);
-            color: #ffffff;
-            font-size: 14px;
-            width: 450px;
-            height: 315px;
-            overflow: hidden;
-            border-radius: 11px;
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
-            backdrop-filter: blur(3px);
+        @font-face {
+            font-family: "YouSheBiaoTiHei";
+            src: url("@/assets/fonts/YouSheBiaoTiHei-2.ttf") format("truetype");
+            font-weight: normal;
+            font-style: normal;
         }
 
+        @font-face {
+            font-family: "AliMaMaShuHeiTi";
+            src: url("@/assets/fonts/阿里妈妈数黑体.ttf") format("truetype");
+        }
+
+        @font-face {
+            font-family: "AlimamaAgileVF";
+            src: url("@/assets/fonts/AlimamaAgileVF-Thin.ttf") format("truetype");
+        }
+
+        body {
+            margin: 0;
+            font-family: "AlimamaAgileVF", sans-serif;
+            background: rgba(23, 50, 88, 0.6);
+            backdrop-filter: blur(6px);
+            color: #ffffff;
+            font-size: 14px;
+            width: 220px;
+            height: 170px;
+            overflow: hidden;
+            border-radius: 11px;
+            box-shadow: 0 0 15px rgba(0, 191, 255, 0.8);
+        }
+
+        /* ===== Header ===== */
         .header {
-            background: linear-gradient(to right,
-                    rgba(49, 141, 169, 0.7),
-                    rgba(79, 99, 113, 0.7));
-            color: #fff;
+            background: rgba(23, 50, 88, 0.6);
+            backdrop-filter: blur(6px);
+            border-bottom: 1px solid rgba(248, 248, 248, 0.4);
+            color: #ffffff;
             font-weight: 600;
-            padding: 15px 18px;
-            font-size: 30px;
+            padding: 6px 10px;
+            font-size: 14px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            text-shadow: 0 0 6px #00bfff;
-            border: none;
-            backdrop-filter: blur(1px);
+
+            font-family: "YouSheBiaoTiHei", sans-serif;
         }
 
+        /* ===== Content ===== */
         .content {
-            padding: 18px 20px;
+            background: rgba(23, 50, 88, 0.6);
+            backdrop-filter: blur(6px);
+            padding: 9px 10px;
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            gap: 6px;
         }
 
+        /* ===== Rows ===== */
         .row {
             display: flex;
             align-items: center;
@@ -50,79 +71,78 @@
         }
 
         .label {
-            color: #faf4f4;
-            min-width: 100px;
-            font-size: 24px;
-            text-shadow: #58f0f0 0 0 1px;
-            font-family: "YSBTHeiTi", Arial, sans-serif;
+            color: rgba(214, 245, 255, 0.85);
+            min-width: 60px;
+            font-size: 12px;
+            font-family: "YouSheBiaoTiHei", Arial, sans-serif;
         }
 
         .value {
-            font-weight: bold;
+            font-weight: 600;
             color: #ffffff;
-            text-shadow: #566fff 0 0 8px;
-            font-size: 24px;
-            font-family: "YSBTHeiTi", sans-serif;
+            font-size: 12px;
+            font-family: "YouSheBiaoTiHei", sans-serif;
         }
 
+        /* ===== Status Dots ===== */
         .status-dots {
             display: flex;
-            gap: 6px;
+            gap: 4px;
         }
 
         .dot {
-            width: 14px;
-            height: 14px;
+            width: 10px;
+            height: 10px;
             border-radius: 50%;
-            border: 1px solid #999;
+            border: 1px solid rgba(214, 245, 255, 0.4);
         }
 
+        /* 运行中（冷青绿） */
         .dot.green {
-            background: #00cc44;
-            box-shadow: 0 0 4px #00cc44;
+            background: rgba(0, 255, 200, 0.85);
+            box-shadow: 0 0 6px rgba(0, 255, 200, 0.8);
         }
 
+        /* 异常（冷红，压饱和） */
         .dot.red {
-            background: #ff3333;
-            box-shadow: 0 0 4px #ff3333;
+            background: rgba(255, 80, 80, 0.8);
+            box-shadow: 0 0 6px rgba(255, 80, 80, 0.6);
         }
 
+        /* 未启用 */
         .dot.gray {
-            background: #bbb;
-            box-shadow: 0 0 4px #bbb;
+            background: rgba(180, 190, 200, 0.6);
+            box-shadow: 0 0 4px rgba(180, 190, 200, 0.4);
         }
 
+        /* ===== Button ===== */
         button {
-            background: linear-gradient(to right,
-                    rgba(49, 141, 169, 0.7) 0%,
-                    rgba(79, 99, 113, 0.7) 33%,
-                    rgba(45, 198, 245, 0.7) 66%,
-                    rgba(39, 77, 104, 0.7) 100%);
-            background-size: 200% 100%;
-            background-position: 0% 0%;
-            color: #dcd9ff;
+            background: linear-gradient(180deg,
+                    rgba(36, 104, 190, 0.4),
+                    rgba(0, 144, 211, 0.8));
+            color: #ffffff;
             font-weight: 600;
-            font-family: "SimHei", Arial, sans-serif;
-            text-shadow: 0 0 6px #00bfff;
-            border: none;
-            border-radius: 4px;
-            padding: 4px 10px;
+            font-family: "ALMMAVF", sans-serif;
+            border: 1px solid rgba(214, 245, 255, 0.4);
+            border-radius: 6px;
+            padding: 4px 12px;
             cursor: pointer;
-            backdrop-filter: blur(1px);
-            font-size: 16px;
+            font-size: 12px;
+            box-shadow: 0 0 6px rgba(0, 191, 255, 0.6);
             transition: all 0.3s ease;
         }
 
         button:hover {
-            background-position: -100% 0%;
-            transform: scale(1.01);
+            box-shadow: 0 0 12px rgba(0, 191, 255, 1);
+            transform: scale(1.05);
         }
 
+        /* ===== Footer ===== */
         .footer {
             margin-top: 8px;
             text-align: right;
             font-size: 12px;
-            color: #e9eff7;
+            color: rgba(214, 245, 255, 0.8);
         }
     </style>
 </head>
@@ -151,7 +171,7 @@
     <div class="content">
         <div class="row">
             <div class="label">瞬时抽升量：</div>
-            <div class="value">9.7万㎥/日</div>
+            <div class="value">9.7万/日</div>
         </div>
 
         <div class="row">

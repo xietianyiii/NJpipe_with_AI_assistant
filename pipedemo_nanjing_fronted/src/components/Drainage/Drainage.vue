@@ -13,7 +13,8 @@
 
         <div class="sidebar-left-card card1">
           <BaseCard title="管网总览" titleType="left" :contentBg="contentLbg1" width="344px" height="184px"
-            contentClass="card1-content-row">
+            contentClass="card1-content-row" clickable @titleClick="onOpenPipeOverViewClick"
+            @titleCancel="onClosePipeOverViewClick">
             <div class="card-content-row card1-row1">
               <div class="card-content-row-left card1-row1-left">
                 <div class="card-content-row-left-icon card1-row1-left-icon">
@@ -77,7 +78,8 @@
 
         <div class="sidebar-left-card card2">
           <BaseCard title="泵站监测" titleType="left" :contentBg="contentLbg2" width="344px" height="156px"
-            contentClass="card2-content-row">
+            contentClass="card2-content-row" clickable @titleClick="onCreatePumpPoiClick"
+            @titleCancel="onClosePumpPoiClick">
             <div class="card2-left-chart-container-wrapper">
               <div class="card2-left-chart-container">
                 <RainPumpChart1 />
@@ -101,7 +103,8 @@
 
         <div class="sidebar-left-card card3">
           <BaseCard title="污水厂概况" titleType="left" :contentBg="contentLbg3" width="344px" height="80px"
-            contentClass="card3-content-row">
+            contentClass="card3-content-row" clickable @titleClick="onOpenSewagePlantClick"
+            @titleCancel="onCloseSewagePlantClick">
             <div class="card3-content-left-container">
               <div class="card3-left-icon">
                 <img class="card3-left-icon-img" src="@/assets/pngs/BG/sidebar/card/card3-svg/icon-left.png" />
@@ -125,7 +128,8 @@
 
         <div class="sidebar-left-card card4">
           <BaseCard title="排水分区" titleType="left" :contentBg="contentLbg4" width="344px" height="240px"
-            contentClass="card4-content-row">
+            contentClass="card4-content-row" clickable @titleClick="onOpenWaterZoneClick"
+            @titleCancel="onCloseWaterZoneClick">
             <div class="card4-content-row card4-row1">
               <div class="card4-row1-icon">
                 <img class="card4-row1-icon-img" src="@/assets/pngs/BG/sidebar/card/card4-svg/row1-icon.png" />
@@ -216,10 +220,12 @@
             contentClass="Rcard2-content-row">
 
             <div class="Rcard2-content-item1">
-              <div class="Rcard2-content-item1-button1">
+              <div class="Rcard2-content-item1-button1" :class="{ active: activeDefectButton === 'structural' }"
+                @click="handleDefectButtonClick('structural')">
                 结构性缺陷
               </div>
-              <div class="Rcard2-content-item1-button2">
+              <div class="Rcard2-content-item1-button2" :class="{ active: activeDefectButton === 'functional' }"
+                @click="handleDefectButtonClick('functional')">
                 功能性缺陷
               </div>
             </div>
@@ -280,7 +286,7 @@
               </div>
             </div>
             <div class="Rcard2-content-item3">
-              <ReuseTable :columns="defectColumns" :data="defectRows" />
+              <ReuseTable :columns="defectColumns" :data="defectRows" clickable @row-click="onDefectRowClick" />
             </div>
 
           </BaseCard>
@@ -302,6 +308,35 @@ import contentRbg2 from "@/assets/pngs/BG/sidebar/card/background/R_Content2.png
 import ReuseTable from "@/components/ReuseCop/Table.vue";
 import NumberUnit from "@/components/ReuseCop/NumberUnit.vue";
 import BaseCard from "@/components/ReuseCop/BaseCard.vue";
+
+type DefectType = "structural" | "functional";
+
+const activeDefectButton = ref<DefectType | null>(null);
+
+const emit = defineEmits<{
+  (e: "open-pipe-overview"): void;
+  (e: "close-pipe-overview"): void;
+  (e: "create-pump-poi"): void;
+  (e: "close-pump-poi"): void;
+  (e: "open-sewage-plant"): void;
+  (e: "close-sewage-plant"): void;
+  (e: "open-water-zone"): void;
+  (e: "close-water-zone"): void;
+  (e: "open-struc-defect"): void;
+  (e: "close-struc-defect"): void;
+  (e: "open-func-defect"): void;
+  (e: "close-func-defect"): void;
+}>();
+
+const defectCardVisible = ref(false)
+const cardDetailData = ref({
+  id: "",
+  material: "",
+  diameter: "",
+  length: "",
+  location: "",
+  defect: "",
+})
 
 const RainPumpChart1 = defineAsyncComponent(
   () => import("@/components/Drainage/Chart/card2-chart1.vue")
@@ -330,6 +365,80 @@ const defectColumns = [
   { key: "defect", label: "缺陷名称" },
 ]
 
+function onOpenPipeOverViewClick() {
+  emit("open-pipe-overview");
+}
+
+function onClosePipeOverViewClick() {
+  emit("close-pipe-overview");
+}
+
+function onCreatePumpPoiClick() {
+  emit("create-pump-poi");
+}
+
+function onClosePumpPoiClick() {
+  emit("close-pump-poi");
+}
+
+function onOpenSewagePlantClick() {
+  emit("open-sewage-plant");
+}
+
+function onCloseSewagePlantClick() {
+  emit("close-sewage-plant");
+}
+
+function onOpenWaterZoneClick() {
+  emit("open-water-zone");
+}
+
+function onCloseWaterZoneClick() {
+  emit("close-water-zone");
+}
+
+const handleDefectButtonClick = (buttonType: DefectType) => {
+  if (activeDefectButton.value === buttonType) {
+    activeDefectButton.value = null;
+
+    // 关闭逻辑
+    if (buttonType === "structural") {
+      closeStrucDefectClick();
+    } else {
+      closeFuncDefectClick();
+    }
+  } else {
+    activeDefectButton.value = buttonType;
+
+    // 打开逻辑
+    if (buttonType === "structural") {
+      onStrucDefectClick();
+    } else {
+      onFuncDefectClick();
+    }
+  }
+};
+
+function onStrucDefectClick() {
+  emit("open-struc-defect");
+}
+
+function onFuncDefectClick() {
+  emit("open-func-defect");
+}
+
+function closeStrucDefectClick() {
+  emit("close-struc-defect");
+}
+
+function closeFuncDefectClick() {
+  emit("close-func-defect");
+}
+
+const onDefectRowClick = (rowIndex: number, rowData: any) => {
+  console.log("点击行索引:", rowIndex);
+  console.log("行数据:", rowData);
+};
 </script>
 
 <style scoped>
@@ -766,6 +875,17 @@ const defectColumns = [
   cursor: pointer;
 }
 
+.Rcard2-content-item1-button1.active,
+.Rcard2-content-item1-button2.active {
+  background: url("@/assets/pngs/BG/sidebar/card/card6-svg/hover.png") no-repeat center/contain;
+  box-shadow: 0 0 8px rgba(0, 191, 255, 0.8);
+}
+
+.Rcard2-content-item1-button1.active:hover,
+.Rcard2-content-item1-button2.active:hover {
+  box-shadow: 0 0 12px rgba(0, 191, 255, 1);
+}
+
 .Rcard2-chart-container {
   display: flex;
   align-items: center;
@@ -839,7 +959,7 @@ const defectColumns = [
   opacity: 0.8;
 }
 
-.Rcard2-content-item3{
+.Rcard2-content-item3 {
   display: flex;
   margin-top: -10px;
 }

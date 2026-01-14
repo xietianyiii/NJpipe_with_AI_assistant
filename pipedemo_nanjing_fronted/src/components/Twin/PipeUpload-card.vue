@@ -326,7 +326,7 @@ watch(
 );
 
 // 监听步骤变化，当进入步骤2时启动定时器使loadingProgress按指定值增加
-let progressInterval = null;
+let progressInterval: number | null = null;
 watch(() => props.pipeUploadStepActive, (newVal, oldVal) => {
   // 清除之前的定时器
   if (progressInterval) {

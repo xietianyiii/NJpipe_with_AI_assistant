@@ -268,7 +268,7 @@ watch(
 );
 
 // 监听值变化并触发动画
-let animationTimeouts = [];
+let animationTimeouts: number[] = [];
 
 onBeforeUnmount(() => {
   // 清除所有待执行的定时器
@@ -276,7 +276,7 @@ onBeforeUnmount(() => {
 });
 
 // 当任何值发生变化时，为对应的元素添加动画类
-const triggerValueChangeAnimation = (selector) => {
+const triggerValueChangeAnimation = (selector: string) => {
   nextTick(() => {
     const elements = document.querySelectorAll(selector);
     elements.forEach((el) => {
