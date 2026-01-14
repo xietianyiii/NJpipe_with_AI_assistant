@@ -1,0 +1,14 @@
+# Logs
+logs
+*.log
+
+.venv
+
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+web_dist/
+build/
+main.exe
