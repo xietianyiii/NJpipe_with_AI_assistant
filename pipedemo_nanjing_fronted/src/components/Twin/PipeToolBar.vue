@@ -385,41 +385,36 @@
             <div v-if="activeToolIndex === 11" class="light-box">
               <div class="light-row">
                 <label class="light-label">场景风格：</label>
-                <!-- <el-select v-model="flowPieType" placeholder="请选择管网类型" class="light-select" size="small">
-                  <el-option label="雨水管线" value="rain_line" />
-                  <el-option label="污水管线" value="sewage_line" />
-                </el-select> -->
                 <BaseSelect v-model="secenStyle" :options="secenStyleOptions" placeholder="请选择场景风格" />
               </div>
 
               <div class="light-row">
-                <label class="light-label">管网类型：</label>
-                <!-- <el-select v-model="hightPieType" placeholder="请选择管网类型" class="light-select" size="small">
-                  <el-option label="雨水管线" value="rain_line" />
-                  <el-option label="污水管线" value="sewage_line" />
-                  <el-option label="雨水管井" value="rain_node" />
-                  <el-option label="污水管井" value="sewage_node" />
-                </el-select> -->
-                <BaseSelect v-model="hightPieType" :options="hightOptions" placeholder="请选择管网类型" />
+                <label class="light-label">场景天气：</label>
+                <BaseSelect v-model="secenWeather" :options="secenWeatherOptions" placeholder="请选择场景天气" />
               </div>
 
               <div class="light-row">
-                <label class="light-label">高度：</label>
+                <label class="light-label">场景虚化：</label>
+                <BaseSelect v-model="sceneBlurType" :options="sceneBlurOptions" placeholder="请选择场景虚化类型" />
+              </div>
+
+              <div class="light-row">
+                <label class="light-label">虚化度：</label>
                 <div class="custom-number">
                   <div class="elevation-num-input-btn" @click="
-                    elevationValue = (
-                      parseFloat(elevationValue) - 0.5
-                    ).toString()
+                    sceneBlurValue = Number(
+                      (sceneBlurValue - 0.1).toFixed(1)
+                    )
                     ">
                     <img src="@/assets/pngs/pipetoolbar/num_input_decrease.png" style="width: 24px; height: 24px" />
                   </div>
 
-                  <el-input v-model="elevationValue" style="width: 100px; height: 24px" />
+                  <el-input v-model="sceneBlurValue" style="width: 100px; height: 24px" />
 
                   <div class="elevation-num-input-btn" @click="
-                    elevationValue = (
-                      parseFloat(elevationValue) + 0.5
-                    ).toString()
+                    sceneBlurValue = Number(
+                      (sceneBlurValue + 0.1).toFixed(1)
+                    )
                     ">
                     <img src="@/assets/pngs/pipetoolbar/num_input_increase.png" style="width: 24px; height: 24px" />
                   </div>
@@ -463,15 +458,43 @@ const flowPieType = ref("rain_line");
 const flowStyle = ref("0");
 const flowDirection = ref("1");
 const flowColor = ref("#ff0000ff");
-const secenStyle = ref("comic");
+const secenStyle = ref("false");
+const sceneBlurType = ref("none");
+const sceneBlurValue = ref(0.5);
+const secenWeather = ref("none");
+
 const visiblePieType = ref("rain_line");
 const visiblePipeIds = ref<string[]>([]);
 
 const secenStyleOptions = [
+  { label: "写实风", value: "false" },
   { label: "漫画风", value: "comic" },
   { label: "素描风", value: "sketch" },
   { label: "暗色风", value: "dark" },
   { label: "灰白风", value: "ashy" },
+];
+
+const secenWeatherOptions = [
+  { label: "晴天", value: "Sunny" },
+  { label: "多云", value: "Cloudy" },
+  { label: "少云", value: "PartlyCloudy" },
+  { label: "阴天", value: "Overcast" },
+  { label: "小雨", value: "LightRain" },
+  { label: "中雨", value: "ModerateRain" },
+  { label: "大雨", value: "HeavyRain" },
+  { label: "小雪", value: "LightSnow" },
+  { label: "中雪", value: "ModerateSnow" },
+  { label: "大雪", value: "HeavySnow" },
+  { label: "雾天", value: "Foggy" },
+  { label: "扬尘", value: "Sand" },
+  { label: "雾霭", value: "Haze" },
+]
+
+const sceneBlurOptions = [
+  { label: "道路", value: "道路" },
+  { label: "水系", value: "水系" },
+  { label: "建筑", value: "建筑" },
+  { label: "地形", value: "地形" },
 ];
 
 const hightOptions = [
@@ -512,7 +535,7 @@ const cardHeight = computed(() => {
     case 6:
       return '151px'
     case 11:
-      return '66px'
+      return '192px'
     default:
       return '108px'
   }
@@ -610,7 +633,7 @@ const emit = defineEmits<{
     color: string
   ): void;
   (e: "resetflowdirectionClicked"): void;
-  (e: "sceneStyleClicked", style: string): void;
+  (e: "sceneStyleClicked", style: string, weather: string, blurType: string, blurValue: number): void;
   (e: "resetSceneStyleClicked"): void;
   (e: "pipSpeEffectClicked"): void;
   (e: "resetSpeEffectClicked"): void;
@@ -709,7 +732,13 @@ const handleResetFlowDirection = () => {
 };
 
 const handleSceneStyle = () => {
-  emit("sceneStyleClicked", secenStyle.value);
+  emit(
+    "sceneStyleClicked",
+    secenStyle.value,
+    secenWeather.value,
+    sceneBlurType.value,
+    sceneBlurValue.value
+  );
 };
 
 const handleResetSceneStyle = () => {
@@ -881,7 +910,7 @@ onMounted(() => {
 .pipe-toolbar {
   position: fixed;
   top: 94%;
-  left: 30%;
+  left: 27%;
   /* 你想固定左侧位置 */
   transform: translateY(-50%);
   display: flex;

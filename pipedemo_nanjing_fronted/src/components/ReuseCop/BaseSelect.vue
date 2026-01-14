@@ -285,13 +285,12 @@ onBeforeUnmount(() => document.removeEventListener("click", onDocClick))
   left: 0;
   top: calc(100% + 6px);
   min-width: 74px;
-  max-height: 160px;
+  max-height: 150px;
   overflow: auto;
   border-radius: 6px;
   backdrop-filter: blur(6px);
   z-index: 20;
   background: url("@/assets/pngs/BG/select/background.png") no-repeat center center;
-  
   transition: all 0.2s ease;
 }
 

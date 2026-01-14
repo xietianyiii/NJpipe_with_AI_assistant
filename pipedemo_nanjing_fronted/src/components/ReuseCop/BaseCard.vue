@@ -1,8 +1,10 @@
 <template>
   <div class="base-card" :class="titleType">
     <!-- 标题 -->
-    <div class="base-card-title" :class="titleType">
-      <span class="title-text">{{ title }}</span>
+    <div class="base-card-title" :class="[titleType, { clickable: isTitleClickable }]"
+      @click="isTitleClickable && emit('titleCancel')">
+      <span class="title-text" :class="{ clickable: isTitleClickable }"
+        @click.stop="isTitleClickable && emit('titleClick')">{{ title }}</span>
     </div>
 
     <!-- 内容 -->
@@ -15,6 +17,12 @@
 <script setup lang="ts">
 import { computed } from "vue";
 
+const emit = defineEmits<{
+  (e: "titleClick"): void;
+  (e: "titleCancel"): void;
+}>();
+
+
 const props = defineProps<{
   title: string;
   titleType: "left" | "right";
@@ -22,7 +30,10 @@ const props = defineProps<{
   width?: string;
   height?: string;
   contentClass?: string;
+  clickable?: boolean;
 }>();
+
+const isTitleClickable = computed(() => !!props.clickable);
 
 const contentStyle = computed(() => ({
   background: `url(${props.contentBg}) no-repeat center`,
@@ -44,6 +55,7 @@ const contentStyle = computed(() => ({
   height: 40px;
   display: flex;
   align-items: center;
+  gap: 40px;
 }
 
 .base-card-title.left {
@@ -60,7 +72,20 @@ const contentStyle = computed(() => ({
   font-size: 22px;
   color: #fff;
   font-family: "YouSheBiaoTiHei", sans-serif;
+  transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1);
 }
+
+.base-card-title.clickable {
+  cursor: grabbing;
+}
+
+.title-text.clickable {
+  cursor:pointer;
+}
+
+/* .title-text.clickable:active {
+  transform: scale(0.98);
+} */
 
 .base-card-title.right {
   justify-content: flex-end;
@@ -80,5 +105,4 @@ const contentStyle = computed(() => ({
   margin-left: -2px;
   margin-right: 35px;
 }
-
 </style>

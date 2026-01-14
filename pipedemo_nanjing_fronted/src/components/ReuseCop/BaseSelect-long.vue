@@ -164,7 +164,7 @@ onBeforeUnmount(() => document.removeEventListener("click", onDocClick))
   transition: all 0.3s ease;
 }
 
-.base-select:hover{
+.base-select:hover {
   background-color: rgba(128, 136, 211, 0.6);
   border-radius: 6px;
 }
@@ -280,13 +280,14 @@ onBeforeUnmount(() => document.removeEventListener("click", onDocClick))
   left: 0;
   bottom: calc(100% + 6px);
   min-width: 150px;
-  max-height: 160px;
+  max-height: 155px;
   overflow: auto;
   border-radius: 6px;
   backdrop-filter: blur(12px);
   z-index: 20;
   background: linear-gradient(0deg, rgba(23, 50, 88, 0.6), rgba(23, 50, 88, 0.6)), rgba(23, 50, 88, 0.6);
   transition: all 0.2s ease;
+  scrollbar-width: none;
 }
 
 .option {

@@ -11,7 +11,8 @@
       <div class="sidebar-right">
         <div class="sidebar-right-card card1">
           <BaseCard title="积水告警" titleType="right" :contentBg="contentLbg1" width="344px" height="130px"
-            contentClass="Rcard1-content-row">
+            contentClass="Rcard1-content-row" clickable @titleClick="onOpenPumpCarClick"
+            @titleCancel="onClosePumpCarClick">
             <!-- <div class="Rcard1-content-row row1">
               <div class="Rcard1-row1-icon">
                 <img class="Rcard1-row1-icon-img" src="@/assets/pngs/BG/sidebar/Sim/card1/tatal-point.png" />
@@ -236,6 +237,11 @@ import NumberUnit from "@/components/ReuseCop/NumberUnit.vue";
 import BaseCard from "@/components/ReuseCop/BaseCard.vue";
 import BaseSelect from "@/components/ReuseCop/BaseSelect.vue";
 
+const emit = defineEmits<{
+  (e: "open-pump-car"): void;
+  (e: "close-pump-car"): void;
+}>();
+
 const sortValue = ref<string | number | null>(null)
 const manageValue = ref<string | number | null>(null)
 const typeValue = ref<string | number | null>(null)
@@ -267,6 +273,13 @@ const PumpCarChart = defineAsyncComponent(
   () => import("@/components/Sim/Chart/car-task.vue")
 );
 
+function onOpenPumpCarClick() {
+  emit("open-pump-car");
+}
+
+function onClosePumpCarClick() {
+  emit("close-pump-car");
+}
 </script>
 
 
