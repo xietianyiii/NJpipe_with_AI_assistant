@@ -1,3 +1,4 @@
+from fastapi.staticfiles import StaticFiles
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.logging import setup_logging
@@ -11,6 +12,7 @@ from app.routers.aiQwen import router as ai_router
 setup_logging()
 
 app = FastAPI(title="PipeNet API")
+
 
 @app.middleware("http")
 async def request_id_middleware(request: Request, call_next):
@@ -27,6 +29,7 @@ async def request_id_middleware(request: Request, call_next):
     response.headers["X-Request-ID"] = request_id
     return response
 
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -37,3 +40,5 @@ app.add_middleware(
 app.include_router(upload_router)
 app.include_router(pipes_router)
 app.include_router(ai_router)
+
+app.mount("/", StaticFiles(directory="web_dist", html=True), name="frontend")
