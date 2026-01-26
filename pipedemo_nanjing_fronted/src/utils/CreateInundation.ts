@@ -79,7 +79,7 @@ export async function createAndRunInundation(App: any, configPath: string): Prom
 
     // 5️⃣ 运行淹没算法
     const runRes = await inundationAlgo.RunAlgorithm({
-      offset: [0, 0, 0],
+      offset: [0, 0, 6],
       scale: [1, 1],
       rotation: 0,
       materialEId: materialObj.eid,

@@ -238,7 +238,7 @@
                   <div class="legend-item-name">
                     <div class="color-circle circle1"></div>
                     <div class="legend-text">
-                      结垢
+                      悬挂
                     </div>
                   </div>
                   <div class="legend-item-count">
@@ -250,7 +250,7 @@
                   <div class="legend-item-name">
                     <div class="color-circle circle2"></div>
                     <div class="legend-text">
-                      脱节
+                      错位
                     </div>
                   </div>
                   <div class="legend-item-count">
@@ -262,7 +262,7 @@
                   <div class="legend-item-name">
                     <div class="color-circle circle3"></div>
                     <div class="legend-text">
-                      变形
+                      交叉
                     </div>
                   </div>
                   <div class="legend-item-count">
@@ -274,7 +274,7 @@
                   <div class="legend-item-name">
                     <div class="color-circle circle4"></div>
                     <div class="legend-text">
-                      腐蚀
+                      偏差
                     </div>
                   </div>
                   <div class="legend-item-count">
@@ -294,6 +294,10 @@
 
       </div>
     </div>
+
+    <DrainageZoneLegendCard v-show="legendCardVisible" />
+
+    <PipeDefectInfoCard :visible="defectCardVisible" :detailData="cardDetailData" @close="defectCardVisible = false" />
   </div>
 </template>
 
@@ -308,6 +312,10 @@ import contentRbg2 from "@/assets/pngs/BG/sidebar/card/background/R_Content2.png
 import ReuseTable from "@/components/ReuseCop/Table.vue";
 import NumberUnit from "@/components/ReuseCop/NumberUnit.vue";
 import BaseCard from "@/components/ReuseCop/BaseCard.vue";
+
+const PipeDefectInfoCard = defineAsyncComponent(
+  () => import("@/components/Twin/PipeDefectInfo-card.vue")
+);
 
 type DefectType = "structural" | "functional";
 
@@ -328,6 +336,8 @@ const emit = defineEmits<{
   (e: "close-func-defect"): void;
 }>();
 
+const legendCardVisible = ref(false)
+
 const defectCardVisible = ref(false)
 const cardDetailData = ref({
   id: "",
@@ -337,6 +347,10 @@ const cardDetailData = ref({
   location: "",
   defect: "",
 })
+
+const DrainageZoneLegendCard = defineAsyncComponent(
+  () => import("@/components/Drainage/Water-Zone/water-zone-legend-card.vue")
+);
 
 const RainPumpChart1 = defineAsyncComponent(
   () => import("@/components/Drainage/Chart/card2-chart1.vue")
@@ -351,12 +365,12 @@ const RainPumpChart6 = defineAsyncComponent(
 );
 
 const defectRows = ref([
-  { id: "36170506", location: "西城区-管段 B-05", defect: "脱节" },
-  { id: "f790a225", location: "东城区-管段 A-12", defect: "结垢" },
-  { id: "f790a225", location: "东城区-管段 A-12", defect: "结垢" },
-  { id: "f790a225", location: "东城区-管段 A-12", defect: "变形" },
-  { id: "f790a225", location: "东城区-管段 A-12", defect: "结垢" },
-  { id: "f790a225", location: "东城区-管段 A-12", defect: "腐蚀" },
+  { id: "36170506", location: "西城区-管段 B-05", defect: "错位" },
+  { id: "a569a225", location: "东城区-管段 C-22", defect: "悬挂" },
+  { id: "v230a225", location: "北城区-管段 A-52", defect: "悬挂" },
+  { id: "t982a225", location: "南城区-管段 N-19", defect: "交叉" },
+  { id: "s985a225", location: "西城区-管段 H-33", defect: "悬挂" },
+  { id: "q211a225", location: "东城区-管段 W-22", defect: "偏差" },
 ]);
 
 const defectColumns = [
@@ -391,10 +405,12 @@ function onCloseSewagePlantClick() {
 
 function onOpenWaterZoneClick() {
   emit("open-water-zone");
+  legendCardVisible.value = true
 }
 
 function onCloseWaterZoneClick() {
   emit("close-water-zone");
+  legendCardVisible.value = false
 }
 
 const handleDefectButtonClick = (buttonType: DefectType) => {
@@ -436,9 +452,19 @@ function closeFuncDefectClick() {
 }
 
 const onDefectRowClick = (rowIndex: number, rowData: any) => {
-  console.log("点击行索引:", rowIndex);
-  console.log("行数据:", rowData);
-};
+  cardDetailData.value = {
+    id: rowData.id,
+    location: rowData.location,
+    defect: rowData.defect,
+
+    // 👇 假数据（现在阶段完全 OK）
+    material: "混凝土",
+    diameter: "800 mm",
+    length: "120 m",
+  }
+
+  defectCardVisible.value = true
+}
 </script>
 
 <style scoped>

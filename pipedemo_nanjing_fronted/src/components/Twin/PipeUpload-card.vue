@@ -99,6 +99,7 @@
 import { ref, watch, onMounted, nextTick } from "vue";
 import { UploadFilled } from "@element-plus/icons-vue";
 import { ElMessage } from "element-plus";
+import type { UploadInstance } from "element-plus";
 import axios from "axios";
 import * as echarts from "echarts";
 import { ShapefileLoader } from "@/utils/ShapefileLoader";
@@ -109,11 +110,11 @@ const props = defineProps({
   pipeUploadStepActive: { type: Number, default: 0 }
 });
 
-const pipeUpload = ref(null);
+const pipeUpload = ref<UploadInstance>();
 const isUploading = ref(false);
 const isUploadLoading = ref(false);
 
-const loadingProgress = ref(0);
+const loadingProgress = ref<number>(0);
 
 const UserDatafieldNames = ref<string[]>([]); // 存储字段名称数组
 
@@ -271,10 +272,10 @@ watch(
 );
 
 // 监听步骤变化，当进入步骤2时启动定时器使loadingProgress按指定值增加
-let progressInterval: number | null = null;
+let progressInterval: ReturnType<typeof setInterval> | null = null;
 watch(() => props.pipeUploadStepActive, (newVal, oldVal) => {
   // 清除之前的定时器
-  if (progressInterval) {
+  if (progressInterval !== null) {
     clearInterval(progressInterval);
     progressInterval = null;
   }
@@ -285,18 +286,20 @@ watch(() => props.pipeUploadStepActive, (newVal, oldVal) => {
     loadingProgress.value = 0;
 
     // 定义目标值和对应的延迟时间（毫秒）
-    const targets = [15, 40, 55, 80, 99, 100];
-    const delays = [1000, 1200, 1000, 1500, 1500, 800]; // 每个阶段1.5秒
+    const targets: number[] = [15, 40, 55, 80, 99, 100];
+    const delays: number[] = [1000, 1200, 1000, 1500, 1500, 800]; // 每个阶段1.5秒
     let currentIndex = 0;
 
     const updateProgress = () => {
       if (currentIndex < targets.length) {
-        loadingProgress.value = targets[currentIndex];
+        loadingProgress.value = targets[currentIndex] ?? 0;
         currentIndex++;
 
         if (loadingProgress.value >= 100) {
           // 进度达到100时清除定时器
-          clearInterval(progressInterval);
+          if (progressInterval !== null) {
+            clearInterval(progressInterval);
+          }
           progressInterval = null;
           // 确保最终值是整数100
           loadingProgress.value = 100;
@@ -323,7 +326,7 @@ const handleUploadSuccess = (response: any, file: any) => {
 
   const filename = response.filename; // 获取上传的文件名
   axios
-    .get(`http://localhost:3000/query_Fieldname/${filename}`)
+    .get(`/query_Fieldname/${filename}`)
     .then((res) => {
       console.log("字段名称:", res.data.fieldnames); // 处理返回的字段名称
       // 可以在这里处理返回的字段名称，展示在界面上等
@@ -350,7 +353,7 @@ const beforeUpload = (file: File) => {
   }
   return false; // 返回 true 表示允许上传
 };
-const uploadFileList = ref([]);
+const uploadFileList = ref<any[]>([]);
 // 处理文件选择变化
 const handleFileChange = (file: any, fileList: any[]) => {
   // 只要 fileList 里有东西，就显示按钮
@@ -365,13 +368,13 @@ const handleFileRemove = (file: any, fileList: any[]) => {
 const handleManualUpload = async () => {
   isUploadLoading.value = true;
   // 1秒后移除loading状态
-  // await new Promise((resolve) => setTimeout(resolve, 1000));
-  // isUploadLoading.value = false;
-  // if (pipeUpload.value) {
-  //   pipeUpload.value.submit(); // 手动触发上传
-  // }
+  await new Promise((resolve) => setTimeout(resolve, 1000));
+  isUploadLoading.value = false;
+  if (pipeUpload.value) {
+    pipeUpload.value.submit(); // 手动触发上传
+  }
 
-  const geojson = await loader.processFiles(uploadFileList.value.map(f => f.raw));
+  const geojson = await loader.processFiles(uploadFileList.value as any);
   if (geojson) {
     // 提取属性表
     const attributes = loader.extractAttributeTable(geojson);

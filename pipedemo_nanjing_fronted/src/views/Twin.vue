@@ -17,8 +17,17 @@
       <MonitorPanel v-if="activePanel === 'monitor'" @create-rain-poi="handleCreateRainPoi"
         @close-rain-poi="handleDeleteRainPoi" @open-pipe-liquid="handleOpenPipeLiquid"
         @open-lake-moni="handleOpenLakeMoni" @close-water-moni="handleCloseWaterMoni"
-        @create-waterlog-poi="handleCreateWaterlogPoi" @close-waterlog-poi="handleDeleteWaterlogPoi" />
-      <SimPanel v-if="activePanel === 'sim'" />
+        @create-waterlog-poi="handleCreateWaterlogPoi" @close-waterlog-poi="handleDeleteWaterlogPoi"
+        @wtlog-click="handleWaterlogClick" />
+      <SimPanel v-if="activePanel === 'sim'" @open-pump-car="handleOpenPumpCar" @close-pump-car="handleClosePumpCar"
+        @open-dispatch-plan="handleOpenDispatchPlan" @close-dispatch-plan="handleCloseDispatchPlan"
+        @open-dispatch-execute="handleOpenDispatchExecute" />
+
+      <LegendCard v-show="showLegendCard" :legend-type="currentLegendType"
+        @selection-change="handleLegendSelectionChange" />
+
+      <LakeMoniCard :visible="lakeMoniVisible" @close="lakeMoniVisible = false"
+        @river-level-updated="handleLakeLevelUpdated" />
 
       <AIQwenCard v-show="showAIQwenCard" :chat="chat" @close="showAIQwenCard = false" />
 
@@ -57,7 +66,7 @@
 
         <button class="control-btn" @click="handleUpdateCamera">
           <span>更新相机</span>
-        </button> -->
+        </button>  -->
         <button class="control-btn" @click="handleGetCameraInfo">
           <span>获取相机信息</span>
         </button>
@@ -85,6 +94,7 @@ import { createPois } from "@/utils/createPois";
 import { handleDeleteAllPois } from "@/utils/deletePois";
 import { createShpArea } from "@/utils/createShpArea";
 import { deleteShpArea } from "@/utils/deleteShpArea";
+import { createCircleRange, setCircleRangeVisible } from "@/utils/CreateCircleRange";
 import { sendAIFeedback } from "@/api/aiQwen";
 import type { AIAction } from "@/ai-action/index";
 import { useChat } from "@/composables/useChat";
@@ -162,6 +172,9 @@ const LegendCard = defineAsyncComponent(
 const InuClickInfoCard = defineAsyncComponent(
   () => import("@/components/Twin/InuClickInfo-card.vue")
 );
+const LakeMoniCard = defineAsyncComponent(
+  () => import("@/components/Twin/LakeMoniCard.vue")
+);
 const PipeAttriInfoCard = defineAsyncComponent(
   () => import("@/components/Twin/PipeClickInfo-card.vue")
 );
@@ -185,6 +198,7 @@ const showPipeAttriInfo = ref(false);
 const showPipeProblemCard = ref(false);
 const showPipeUploadCard = ref(false);
 const showAIQwenCard = ref(false);
+const lakeMoniVisible = ref(false);
 
 const pipeUploadStepActive = ref(0);
 const aiAnalysisTrigger = ref(false);
@@ -240,6 +254,9 @@ const WaterLoggingPoiRegistry = ref<
   { customId: string; stationType: string }[]
 >([]);
 const FloodPumpCarRegistry = ref<{ customId: string; stationType: string }[]>(
+  []
+);
+const WtZoneWaterPlantRegistry = ref<{ customId: string; stationType: string }[]>(
   []
 );
 const PipeLiquidlevelPoiRegistry = ref<
@@ -469,7 +486,9 @@ function registerRenderEvents() {
         await createPipenode(
           App,
           "//10.66.12.53/x.public/exchange/TMP_XTY/WIM/nanjing/pipenode_NJXJK_problem.shp",
-          "sewage_node"
+          "sewage_node",
+          1,
+          1.5,
         );
         // 记录管井EID和key
         const sewageNodePipenode = getPipeNodeByKey("sewage_node");
@@ -482,7 +501,10 @@ function registerRenderEvents() {
 
         console.log("sewage_node", sewageNodePipenode);
 
-        await setPipelineHeight(App, 2, "rain_line");
+        await setPipelineHeight(App, 9.4, "rain_line");
+        await setPipeNodeHeight(App, 11.4, "rain_node");
+        await setPipelineHeight(App, 6.6, "sewage_line");
+        await setPipeNodeHeight(App, 9.4, "sewage_node");
 
         await App.Setting.SetScreenPercentage(150);
       },
@@ -497,6 +519,18 @@ function registerRenderEvents() {
   ]);
 
   App.Renderer.RegisterSceneEvent([
+    {
+      name: "OnMoveAlongPathEndEvent",
+      func: async function (res: any) {
+        console.log("🚗💨 覆盖物路径移动结束：", res);
+
+        if (vehicleDirection === "forward" && isVehicleCar) {
+          await onArriveWaterPoint(); // 到达 B
+        } else {
+          await onArriveBackStart(); // 返回 A
+        }
+      },
+    },
     {
       name: "OnWdpSceneIsReady",
       func: async function () {
@@ -748,22 +782,45 @@ async function handleResetDigCutClicked() {
   await endPickPoint(App);
 }
 
+// async function handlePipeliftClicked(type: string, height: string) {
+//   const heightValue = parseFloat(height);
+
+//   // 根据 type 判断是管线还是管井
+//   if (type.endsWith("_line")) {
+//     await setPipelineHeight(App, heightValue, type);
+//   } else if (type.endsWith("_node")) {
+//     await setPipeNodeHeight(App, heightValue, type);
+//   }
+// }
+
 async function handlePipeliftClicked(type: string, height: string) {
   const heightValue = parseFloat(height);
+  const prefix = type.split("_")[0]; // 提取类型前缀，例如 "rain" 或 "sewage"
 
-  // 根据 type 判断是管线还是管井
-  if (type.endsWith("_line")) {
-    await setPipelineHeight(App, heightValue, type);
-  } else if (type.endsWith("_node")) {
-    await setPipeNodeHeight(App, heightValue, type);
+  // 根据前缀选择对应的管线和管井操作
+  if (prefix === "rain" || prefix === "sewage") {
+    // 根据 prefix 调整管井的高度
+    let adjustedHeightValue = heightValue;
+
+    if (prefix === "rain") {
+      adjustedHeightValue += 2; // 如果是 rain，heightValue 加 2
+    } else if (prefix === "sewage") {
+      adjustedHeightValue += 3; // 如果是 sewage，heightValue 加 3
+    }
+
+    // 调用设置管线和管井高度
+    await setPipelineHeight(App, heightValue, `${prefix}_line`);
+    await setPipeNodeHeight(App, adjustedHeightValue, `${prefix}_node`);
+  } else {
+    console.warn("⚠️ 无效的管网类型:", type);
   }
 }
 
 async function handleResetPipeliftClicked() {
-  await setPipelineHeight(App, 2, "rain_line");
-  await setPipelineHeight(App, 0, "sewage_line");
-  await setPipeNodeHeight(App, 2, "rain_node");
-  await setPipeNodeHeight(App, 0, "sewage_node");
+  await setPipelineHeight(App, 9.4, "rain_line");
+  await setPipeNodeHeight(App, 11.4, "rain_node");
+  await setPipelineHeight(App, 6.6, "sewage_line");
+  await setPipeNodeHeight(App, 9.4, "sewage_node");
 }
 
 async function handlePipelightClicked(
@@ -899,7 +956,7 @@ async function handlePipeEditorToggled(enabled: boolean) {
 
       try {
         const response = await fetch(
-          `http://localhost:3000/pipes/pipenet_nanjing/${info.fId}`
+          `/pipes/pipenet_nanjing/${info.fId}`
         );
         if (!response.ok) throw new Error("查询失败");
 
@@ -940,7 +997,13 @@ async function handlePipSpeEffectClicked() {
   }
 
   await setEntityCustomId(App, "-9083760258375605252", "pipe_overflow");
+  await new Promise(resolve => setTimeout(resolve, 1000));
   await setEntityVisible(App, "pipe_overflow", true);
+
+  await createAndRunInundation(
+    App,
+    "http://10.100.10.124:8090/inundation/water_point_grid/nanjing/Inud_Gen_pipe-overflow.json"
+  );
 
   // const location: [number, number, number] = [
   //   118.77859792288065, 32.040020624823136, 0,
@@ -957,6 +1020,8 @@ async function handlePipSpeEffectClicked() {
 async function handleResetSpeEffectClicked() {
   await setEntityCustomId(App, "-9083760258375605252", "pipe_overflow");
   await setEntityVisible(App, "pipe_overflow", false);
+
+  await deleteInundationAlgorithm();
 }
 
 async function handleResetPipeUploadClicked() {
@@ -970,13 +1035,18 @@ async function handleLiquidlevelClicked(
   pipeLiquidLevel: number,
   color: string
 ) {
-  if (pipeType.endsWith("_line")) {
-    // 管线类型
-    await setPipeLiquidLevel(App, pipeLiquidLevel, color, pipeType);
-  } else if (pipeType.endsWith("_node")) {
-    // 管井类型
-    await setPipeNodeLiquidLevel(App, pipeLiquidLevel, color, pipeType);
+  const prefix = pipeType.split("_")[0]; // rain / sewage
+
+  if (prefix !== "rain" && prefix !== "sewage") {
+    console.warn("⚠️ 无效的管网类型:", pipeType);
+    return;
   }
+
+  // 1️⃣ 管线液位
+  await setPipeLiquidLevel(App, pipeLiquidLevel, color, `${prefix}_line`);
+
+  // 2️⃣ 管井液位
+  await setPipeNodeLiquidLevel(App, pipeLiquidLevel, color, `${prefix}_node`);
   isLiquidLevelSet.value = true;
 
   if (currentPipeEid.value && currentPipeFid.value) {
@@ -1031,14 +1101,15 @@ async function handleResetFlowdirectionClicked() {
 
 async function handleOpenPipeOverview() {
   const position: [number, number, number] = [
-    118.80128193588813, 32.009271019291106, 2188.6027317878943
+    118.7787359290032, 32.04423322259233, 37.00904987825357
   ];
-  const rotation = { pitch: -18.859312057495117, yaw: -129.92684936523438 };
+  const rotation = { pitch: -22.230609893798828, yaw: 89.97012329101562 };
   await updateCamera(App, position, rotation, 2);
-  await setSceneStyle(App, "dark");
+  // await setSceneStyle(App, "dark");
   await setSceneOpacity(App, "水系", 0);
   await setSceneOpacity(App, "建筑", 0);
   await setSceneOpacity(App, "地形", 0);
+  await setSceneOpacity(App, "道路", 0.4);
 }
 
 /** 关闭管网总览 */
@@ -1053,6 +1124,7 @@ async function handleClosePipeOverview() {
   await setSceneOpacity(App, "水系", 1);
   await setSceneOpacity(App, "建筑", 1);
   await setSceneOpacity(App, "地形", 1);
+  await setSceneOpacity(App, "道路", 1);
 }
 
 async function handleSceneStyleClicked(style: string, weather: string, blurType: string, blurValue: number) {
@@ -1072,12 +1144,15 @@ async function handleResetSceneStyleClicked() {
 
 async function handleCreatePumpPoi() {
   const position: [number, number, number] = [
-    118.76833392150021, 32.033545830492244, 82.45153664034628
+    118.85075058795135, 32.025794180655396, 4152.196569062987
   ];
-  const rotation = { pitch: -4.962748050689697, yaw: -57.22252655029297 };
+  const rotation = { pitch: -32.83012008666992, yaw: -160.41421508789062 };
   await updateCamera(App, position, rotation, 2);
 
   console.log("📩 收到泵站监测按钮点击事件");
+
+  const markerNormal = "http://10.100.10.124:8090/inundation/poi/pumpsta_normal.png";
+  const markerActive = "http://10.100.10.124:8090/inundation/poi/pumpsta_active.png";
 
   const coords: [number, number, number?][] = [
     [118.76954937107334, 32.03529536279262, 71],
@@ -1086,28 +1161,30 @@ async function handleCreatePumpPoi() {
   const stationTypes = ["雨水泵站"];
 
   const infoUrls = [
-    "http://10.100.10.124:8090/inundation/html/pump1.html",
+    "http://10.100.10.124:8090/inundation/poi/window/pump1.html",
   ];
 
   const curveUrls = [
-    "http://10.100.10.124:8090/inundation/html/pump1_curve.html",
+    "http://10.100.10.124:8090/inundation/poi/window/pump1_curve.html",
   ];
 
   PumpPoiRegistry.value = await createPois(
     App,
     coords,
-    undefined,
-    undefined,
+    markerNormal,
+    markerActive,
     infoUrls,
     curveUrls,
     stationTypes,
     openStationCurve,
-    [250, 200]
+    [500, 320],
+    ["吴家村泵站"]
   );
 
   console.log("📋 已记录的对象信息:", PumpPoiRegistry.value);
 
   // 显示LegendCard
+  currentLegendType.value = "pump";
   showLegendCard.value = true;
 
   setTimeout(() => fixWdpInputBug(), 500);
@@ -1134,26 +1211,78 @@ async function handleCloseSewagePlant() {
 
 async function handleOpenWaterZone() {
   const position: [number, number, number] = [
-    118.7819824636367, 32.07518659175404, 4577.404796790351
+    118.814569409625, 32.116919716118446, 38817.498705294434
   ];
-  const rotation = {pitch: -77.21292877197266, yaw: -0.25796300172805786};
+  const rotation = { pitch: -75.19129180908203, yaw: 66.09073638916016 };
   await updateCamera(App, position, rotation, 2);
 
   const shpUrls = [
-    "http://10.100.10.124:8090/inundation/shp/Nanjing/water-zone/NJ_Water_Zone1.shp",
-    "http://10.100.10.124:8090/inundation/shp/Nanjing/water-zone/NJ_Water_Zone2.shp",
-    "http://10.100.10.124:8090/inundation/shp/Nanjing/water-zone/NJ_Water_Zone3.shp",
-    "http://10.100.10.124:8090/inundation/shp/Nanjing/water-zone/NJ_Water_Zone4.shp",
+    "http://10.100.10.124:8090/inundation/shp/Nanjing/water-zone/NJ_Water_Zone5.shp",
+    "http://10.100.10.124:8090/inundation/shp/Nanjing/water-zone/NJ_Water_Zone6.shp",
+    "http://10.100.10.124:8090/inundation/shp/Nanjing/water-zone/NJ_Water_Zone7.shp",
+    "http://10.100.10.124:8090/inundation/shp/Nanjing/water-zone/NJ_Water_Zone8.shp",
   ];
 
   const colors = ["FFE4B5", "87CEFA", "1E90FF", "FF7F50"];
 
   shpAreaRegistry.value = await createShpArea(App, shpUrls, colors);
   console.log("📋 已记录的SHP区域信息:", shpAreaRegistry.value);
+
+  const coords: [number, number, number?][] = [
+    [118.93504380489597, 32.12918390846368, 0],
+    [118.75217201023786, 32.09804242577659, 0],
+    [118.66886129329788, 31.97260178423661, 0],
+    [118.8534162775199, 31.903254078186478, 0],
+  ];
+
+  const markerNormals = [
+    "http://10.100.10.124:8090/inundation/poi/wtlevel_normal.png",
+    "http://10.100.10.124:8090/inundation/poi/wtlevel_normal.png",
+    "http://10.100.10.124:8090/inundation/poi/wtlevel_normal.png",
+    "http://10.100.10.124:8090/inundation/poi/wtlevel_normal.png",
+  ];
+
+  const markerActives = [
+    "http://10.100.10.124:8090/inundation/poi/wtlevel_active.png",
+    "http://10.100.10.124:8090/inundation/poi/wtlevel_active.png",
+    "http://10.100.10.124:8090/inundation/poi/wtlevel_active.png",
+    "http://10.100.10.124:8090/inundation/poi/wtlevel_active.png",
+  ];
+
+  const labelTexts = [
+    "水厂-01",
+    "水厂-02",
+    "水厂-03",
+    "水厂-04",
+  ];
+
+  const infoUrls: string[] = [];
+  const curveUrls: string[] = [];
+  const stationTypes: string[] = [];
+
+  WtZoneWaterPlantRegistry.value = await createPois(
+    App,
+    coords,
+    markerNormals,
+    markerActives,
+    infoUrls,
+    curveUrls,
+    stationTypes,
+    openStationCurve,
+    [500, 320],
+    labelTexts
+  );
+
+  console.log("📋 已记录的对象信息:", WtZoneWaterPlantRegistry.value);
+  showLegendCard.value = false;
+
+  setTimeout(() => fixWdpInputBug(), 500);
 }
 
 async function handleCloseWaterZone() {
   console.log("🧹 准备删除所有 SHP 区域:", shpAreaRegistry.value);
+
+  await handleDeleteAllPois(App, WtZoneWaterPlantRegistry.value);
 
   try {
     await deleteShpArea(App, shpAreaRegistry.value);
@@ -1165,46 +1294,554 @@ async function handleCloseWaterZone() {
 
 async function handleOpenStrucDefect() {
   console.log("📩 收到结构缺陷监测按钮开启点击事件");
+  const position: [number, number, number] = [
+    118.77960961528369, 32.02759256008273, 1608.1403079354598
+  ];
+  const rotation = { pitch: -49.33854675292969, yaw: -88.8377914428711 };
+  await updateCamera(App, position, rotation, 2);
+  await setSceneOpacity(App, "水系", 0);
+  await setSceneOpacity(App, "建筑", 0);
+  await setSceneOpacity(App, "地形", 0);
+  await setSceneOpacity(App, "道路", 0);
+
+  await setPipelineVisible(App, false, "sewage_line", ["SN", "SL", "ZT"]);
+  await setPipeNodeVisible(App, false, "sewage_node", ["HNT"]);
+  // await setPipeNodeVisible(App, false, "rain_node", ["HNT"]);
+
+  // const fids1 = ["53393b07", "b50f7eb7", "b50f7eb8", "b50f7eb6", "b50f7eb5"];
+  const fids1 = ["bfa19a5b","053dfcd1","c34e375f"];
+  await setPipelineHighlight(
+    App,
+    true,
+    "#ff0000ff",
+    100,
+    [""],
+    "rain_line",
+    fids1
+  );
+
+  // const fids2 = ["1694edc3", "a82f50b5"];
+  const fids2 = ["1505ddc2","3ee4bbea","c78ace05"];
+  await setPipelineHighlight(
+    App,
+    true,
+    "#0d00ffff",
+    100,
+    [""],
+    "rain_line",
+    fids2
+  );
+
+  // const fids4 = ["b87625c6", "3084886c"];
+  const fids4 = ["dfec7a4f","27c096d7"];
+  await setPipelineHighlight(
+    App,
+    true,
+    "#04f8dfff",
+    100,
+    [""],
+    "rain_line",
+    fids4
+  );
+
+  // const fids5 = ["c8c92f4e"]; 黄色
+  const fids5 = ["f08e5df5","bf3da646","c5ae61b7"];
+  await setPipelineHighlight(
+    App,
+    true,
+    "#fbff00ff",
+    100,
+    [""],
+    "rain_line",
+    fids5
+  );
 }
 
 async function handleCloseStrucDefect() {
   console.log("📩 收到结构缺陷监测按钮关闭点击事件");
+  await setSceneStyle(App, "false");
+  await setSceneOpacity(App, "水系", 1);
+  await setSceneOpacity(App, "建筑", 1);
+  await setSceneOpacity(App, "地形", 1);
+  await setSceneOpacity(App, "道路", 1);
+  await new Promise((resolve) => setTimeout(resolve, 1000));
+  await setPipelineVisible(App, true, "sewage_line", ["SN", "SL", "ZT"]);
+  await setPipeNodeVisible(App, true, "sewage_node", ["HNT"]);
+  await setPipelineHighlight(App, false, "#ffe600", 15, ["SN", "SL", "ZT"], "rain_line");
 }
 
 async function handleOpenFuncDefect() {
   console.log("📩 收到功能缺陷监测按钮开启点击事件");
+  // const position: [number, number, number] = [
+  //   118.77960961528369, 32.02759256008273, 1608.1403079354598
+  // ];
+  // const rotation = {pitch: -49.33854675292969, yaw: -88.8377914428711};
+  // await updateCamera(App, position, rotation, 2);
+  await setSceneOpacity(App, "水系", 0);
+  await setSceneOpacity(App, "建筑", 0);
+  await setSceneOpacity(App, "地形", 0);
+  await setSceneOpacity(App, "道路", 0);
+
+  await setPipelineVisible(App, false, "sewage_line", ["SN", "SL", "ZT"]);
+  await setPipeNodeVisible(App, false, "sewage_node", ["HNT"]);
+  // await setPipeNodeVisible(App, false, "rain_node", ["HNT"]);
+
+  // const fids1 = ["53393b07", "b50f7eb7", "b50f7eb8", "b50f7eb6", "b50f7eb5"];
+  const fids1 = ["bfa19a5b"];
+  await setPipelineHighlight(
+    App,
+    true,
+    "#ff0000ff",
+    100,
+    [""],
+    "rain_line",
+    fids1
+  );
+
+  // const fids2 = ["1694edc3", "a82f50b5"];
+  const fids2 = ["1505ddc2"];
+  await setPipelineHighlight(
+    App,
+    true,
+    "#0d00ffff",
+    100,
+    [""],
+    "rain_line",
+    fids2
+  );
+
+  // const fids4 = ["b87625c6", "3084886c"];
+  const fids4 = ["dfec7a4f"];
+  await setPipelineHighlight(
+    App,
+    true,
+    "#04f8dfff",
+    100,
+    [""],
+    "rain_line",
+    fids4
+  );
+
+  // const fids5 = ["c8c92f4e"];
+  const fids5 = ["f08e5df5"];
+  await setPipelineHighlight(
+    App,
+    true,
+    "#fbff00ff",
+    100,
+    [""],
+    "rain_line",
+    fids5
+  );
 }
 
 async function handleCloseFuncDefect() {
   console.log("📩 收到功能缺陷监测按钮关闭点击事件");
+  await setSceneStyle(App, "false");
+  await setSceneOpacity(App, "水系", 1);
+  await setSceneOpacity(App, "建筑", 1);
+  await setSceneOpacity(App, "地形", 1);
+  await setSceneOpacity(App, "道路", 1);
+  await new Promise((resolve) => setTimeout(resolve, 1000));
+  await setPipelineVisible(App, true, "sewage_line", ["SN", "SL", "ZT"]);
+  await setPipeNodeVisible(App, true, "sewage_node", ["HNT"]);
+  await setPipelineHighlight(App, false, "#ffe600", 15, ["SN", "SL", "ZT"], "rain_line");
 }
 
 async function handleCreateRainPoi() {
+  const position: [number, number, number] = [
+    118.75719166278208, 32.12001381322293, 3765.5325827672123
+  ];
+  const rotation = { pitch: -31.742576599121094, yaw: 62.8891487121582 };
+  await updateCamera(App, position, rotation, 2);
+
   console.log("📩 收到雨量监测按钮点击事件");
+
+  const coords: [number, number, number?][] = [
+    [118.80843298556519, 32.066624916989404, 71],
+  ];
+
+  const stationTypes = ["60mm"];
+
+  const markerNormal = "http://10.100.10.124:8090/inundation/poi/rainsta_normal.png";
+  const markerActive = "http://10.100.10.124:8090/inundation/poi/rainsta_active.png";
+
+
+  const infoUrls = [
+    "http://10.100.10.124:8090/inundation/poi/window/rain1.html",
+  ];
+
+  const curveUrls = [
+    "http://10.100.10.124:8090/inundation/poi/window/rain1_curve.html",
+  ];
+
+  RainPoiRegistry.value = await createPois(
+    App,
+    coords,
+    markerNormal,
+    markerActive,
+    infoUrls,
+    curveUrls,
+    stationTypes,
+    openStationCurve,
+    [500, 320],
+    ["雨量站1"]
+  );
+
+  console.log("📋 已记录的对象信息:", RainPoiRegistry.value);
+
+  // 显示LegendCard
+  currentLegendType.value = "rain";
+  showLegendCard.value = true;
+
+  setTimeout(() => fixWdpInputBug(), 500);
 }
 
 async function handleDeleteRainPoi() {
-  console.log("📩 收到雨量监测按钮关闭点击事件");
+  await handleDeleteAllPois(App, RainPoiRegistry.value);
+  showLegendCard.value = false;
 }
 
 async function handleOpenPipeLiquid() {
   console.log("📩 收到管网流量监测按钮点击事件");
+  const position: [number, number, number] = [
+    118.77919005457976, 32.04765175885222, 31.797795526379925
+  ];
+  const rotation = { pitch: -12.15009593963623, yaw: -133.59109497070312 };
+  await updateCamera(App, position, rotation, 2);
+
+  isLiquidLevelSet.value = true;
+  await handlePipeLabelToggled(true);
+  await setPipelineVisible(App, false, "rain_line", ["SN", "SL", "ZT"]);
+  await setPipeNodeVisible(App, false, "rain_node", ["HNT"]);
+  await setPipeLiquidLevel(App, 0.8, "#00BFFF", "rain_line");
+  await setPipeLiquidLevel(App, 0.8, "#00BFFF", "sewage_line");
+  await setPipeNodeLiquidLevel(App, 0.8, "#00BFFF", "rain_node");
+  await setPipeNodeLiquidLevel(App, 1.0, "#00BFFF", "sewage_node");
+  await setSceneOpacity(App, "水系", 0);
+  await setSceneOpacity(App, "建筑", 0);
+  await setSceneOpacity(App, "地形", 0);
+  await setSceneOpacity(App, "道路", 0);
 }
 
 async function handleOpenLakeMoni() {
-  console.log("📩 收到湖泊监测按钮点击事件");
+  const position: [number, number, number] = [
+    118.80644195246121, 32.079864851948614, 2169.619468547759
+  ];
+  const rotation = { pitch: -59.44451904296875, yaw: 152.5664520263672 };
+  await updateCamera(App, position, rotation, 2);
+
+  lakeMoniVisible.value = true;
+  console.log("📊 收到湖泊水位打开事件:", lakeMoniVisible.value);
+}
+
+// 缓存当前湖面高度（初始值可以按你的业务需要）
+let currentLakeLevel = 5;
+
+async function handleLakeLevelUpdated(level: number) {
+  const coords: [number, number, number][] = [
+    [118.795178359064, 32.07457512599733, currentLakeLevel],
+    [118.795178359064, 32.07457512599733, level],
+  ];
+
+  const lakeEID = "-9151314252773446357";
+
+  if (level >= currentLakeLevel) {
+    await createEntityMovePath(App, lakeEID, coords, 90, 180, 180, 2, false);
+  } else {
+    await createEntityMovePath(App, lakeEID, coords, -90, 180, 180, 2, false);
+  }
+  currentLakeLevel = level;
 }
 
 async function handleCloseWaterMoni() {
   console.log("📩 收到水位监测按钮关闭点击事件");
+  await setSceneStyle(App, "false");
+  await setSceneOpacity(App, "水系", 1);
+  await setSceneOpacity(App, "建筑", 1);
+  await setSceneOpacity(App, "地形", 1);
+  await setSceneOpacity(App, "道路", 1);
+  await setPipelineVisible(App, true, "rain_line", ["SN", "SL", "ZT"]);
+  await setPipeNodeVisible(App, true, "rain_node", ["HNT"]);
+  await setPipeLiquidLevel(App, 0, "#ff4d00ff", "rain_line");
+  await setPipeLiquidLevel(App, 0, "#ff4d00ff", "sewage_line");
+  isLiquidLevelSet.value = false;
+  await handlePipeLabelToggled(false);
 }
 
 async function handleCreateWaterlogPoi() {
-  console.log("📩 收到水位监测按钮点击事件");
+  const position: [number, number, number] = [
+    118.82889870455706, 32.0402373488539, 2864.4946268974477
+  ];
+  const rotation = { pitch: -31.23785972595215, yaw: -158.72247314453125 };
+  await updateCamera(App, position, rotation, 2);
+
+  await createAndRunInundation(
+    App,
+    "http://10.100.10.124:8090/inundation/water_point_grid/nanjing/Inud_Gen.json"
+  );
+
+  await enableInundationInteract(App, true, true);
+  await registerFloodClickCallback(App, (res) => {
+    const info = extractFloodClickInfo(res);
+    if (!info) return;
+
+    console.log("🎯 点击网格 ID:", info.gridID);
+    console.log("📏 当前水深:", info.value);
+    console.log("📈 历史水深数组:", info.history);
+
+    // 更新InuClickInfoCard组件的数据
+    clickedGridID.value = info.gridID.toString();
+    currentInuValue.value = info.value;
+    historyData.value = info.history;
+    showInfo.value = true;
+  });
+
+  console.log("📩 收到积水点监测按钮点击事件");
+
+  const coords: [number, number, number?][] = [
+    [118.77879764299199, 32.06067457713681, 71],
+  ];
+
+  const markerNormal = "http://10.100.10.124:8090/inundation/poi/wtlog_normal.png";
+  const markerActive = "http://10.100.10.124:8090/inundation/poi/wtlog_active.png";
+
+  const stationTypes = ["36mm"];
+
+  const infoUrls = [
+    "http://10.100.10.124:8090/inundation/poi/window/water1.html",
+  ];
+
+  const curveUrls: string[] = [];
+
+  WaterLoggingPoiRegistry.value = await createPois(
+    App,
+    coords,
+    markerNormal,
+    markerActive,
+    infoUrls,
+    curveUrls,
+    stationTypes,
+    openStationCurve,
+    [500, 320],
+    ["   积水点"]
+  );
+
+  console.log("📋 已记录的对象信息:", WaterLoggingPoiRegistry.value);
+
+  // 显示LegendCard
+  currentLegendType.value = "waterlog";
+  showLegendCard.value = true;
+
+  setTimeout(() => fixWdpInputBug(), 500);
 }
 
 async function handleDeleteWaterlogPoi() {
-  console.log("📩 收到水位监测按钮关闭点击事件");
+  await handleDeleteAllPois(App, WaterLoggingPoiRegistry.value);
+  await deleteInundationAlgorithm();
+  showLegendCard.value = false;
+}
+
+async function handleWaterlogClick(index: number) {
+  if (index === 3) {
+
+    const position: [number, number, number] = [
+      118.78050893789745, 32.060429491436764, 109.50152529205775
+    ];
+    const rotation = { pitch: -29.049842834472656, yaw: -170.84732055664062 };
+    await updateCamera(App, position, rotation, 2);
+  }
+}
+
+async function handleOpenPumpCar() {
+  const position: [number, number, number] = [
+    118.77859806083113, 32.060740672618806, 1693.0951294919687
+  ];
+  const rotation = { pitch: -88.99999237060547, yaw: -175.39414978027344 };
+  await updateCamera(App, position, rotation, 2);
+
+  await createAndRunInundation(
+    App,
+    "http://10.100.10.124:8090/inundation/water_point_grid/nanjing/Inud_Gen.json"
+  );
+
+  await enableInundationInteract(App, true, true);
+  await registerFloodClickCallback(App, (res) => {
+    const info = extractFloodClickInfo(res);
+    if (!info) return;
+
+    console.log("🎯 点击网格 ID:", info.gridID);
+    console.log("📏 当前水深:", info.value);
+    console.log("📈 历史水深数组:", info.history);
+
+    // 更新InuClickInfoCard组件的数据
+    clickedGridID.value = info.gridID.toString();
+    currentInuValue.value = info.value;
+    historyData.value = info.history;
+    showInfo.value = true;
+  });
+
+  const coords: [number, number, number?][] = [
+    [118.78170352891638, 32.05949452262926, 0],
+    [118.778328035914, 32.056698525507, 0],
+    [118.77403654761338, 32.065729438418444, 0],
+    [118.77456828848922, 32.060763395514954, 0],
+    [118.77880150743988, 32.06069156440686, 0],
+  ];
+
+  const markerNormals = [
+    "http://10.100.10.124:8090/inundation/poi/car1_normal.png",
+    "http://10.100.10.124:8090/inundation/poi/car2_normal.png",
+    "http://10.100.10.124:8090/inundation/poi/car3_normal.png",
+    "http://10.100.10.124:8090/inundation/poi/car2_normal.png",
+    "http://10.100.10.124:8090/inundation/poi/wtlog_normal.png",
+  ];
+
+  const markerActives = [
+    "http://10.100.10.124:8090/inundation/poi/car1_active.png",
+    "http://10.100.10.124:8090/inundation/poi/car2_active.png",
+    "http://10.100.10.124:8090/inundation/poi/car3_active.png",
+    "http://10.100.10.124:8090/inundation/poi/car2_active.png",
+    "http://10.100.10.124:8090/inundation/poi/wtlog_active.png",
+  ];
+
+  const labelTexts = [
+    "泵车-01",
+    "泵车-02",
+    "泵车-03",
+    "泵车-04",
+    "   积水点",
+  ];
+
+  const infoUrls: string[] = [];
+  const curveUrls: string[] = [];
+  const stationTypes: string[] = [];
+
+  FloodPumpCarRegistry.value = await createPois(
+    App,
+    coords,
+    markerNormals,
+    markerActives,
+    infoUrls,
+    curveUrls,
+    stationTypes,
+    openStationCurve,
+    [500, 320],
+    labelTexts
+  );
+
+  console.log("📋 已记录的对象信息:", FloodPumpCarRegistry.value);
+  showLegendCard.value = false;
+
+  setTimeout(() => fixWdpInputBug(), 500);
+}
+
+async function handleClosePumpCar() {
+  await handleDeleteAllPois(App, FloodPumpCarRegistry.value);
+  await deleteInundationAlgorithm();
+  await deleteVehicle(App);
+  await deleteAllMovePaths(App);
+  await deleteMovePath(App);
+  await setCircleRangeVisible(false);
+  isVehicleCar = false;
+}
+
+const path0: [number, number, number][] = [
+  [118.78170352891638, 32.05949452262926, 0],
+  [118.78173703695394, 32.060192974482604, 0],
+  [118.7792007199177, 32.06044536162779, 0],
+];
+
+const path1: [number, number, number][] = [
+  [118.778328035914, 32.056698525507, 0],
+  [118.77872400821985, 32.05669951233039, 0],
+  [118.7787313135169, 32.06009519170839, 0],
+];
+
+const path2: [number, number, number][] = [
+  [118.77403654761338, 32.065729438418444, 0],
+  [118.77364660023713, 32.06536319284201, 0],
+  [118.77837489957544, 32.061137849248375, 0],
+];
+
+const path3: [number, number, number][] = [
+  [118.77456828848922, 32.060763395514954, 0],
+  [118.77455941871568, 32.06098724856572, 0],
+  [118.77619213099437, 32.06105039088655, 0],
+  [118.77650319498248, 32.06123142904475, 0],
+  [118.7768734724749, 32.06116225987023, 0],
+  [118.77744245532261, 32.060636239017356, 0],
+  [118.77822872257916, 32.0605566442982, 0],
+];
+
+async function handleOpenDispatchPlan() {
+  const position: [number, number, number] = [
+    118.77870836531307, 32.06073583764196, 1402.9525314057016
+  ];
+  const rotation = { pitch: -88.99999237060547, yaw: -175.39414978027344 };
+  await updateCamera(App, position, rotation, 2);
+
+  const position0: [number, number, number] = [
+    118.77880150743988, 32.06069156440686, 0
+  ];
+  await createCircleRange(App, position0, 500, true);
+
+  await createMultiMovePath(App, path0, "#32CD32", "solid");
+  await createMultiMovePath(App, path1, "#00FFFF", "solid");
+  await createMultiMovePath(App, path2, "#00FFFF", "solid");
+  await createMultiMovePath(App, path3, "#00FFFF", "solid");
+
+  if (path0.length > 0 && path0[0]) {
+    await createMoveVehicle(App, path0[0]);
+  }
+}
+
+async function handleCloseDispatchPlan() {
+  console.log("📩 收到计划关闭点击事件");
+  await deleteVehicle(App);
+  await deleteAllMovePaths(App);
+  await deleteMovePath(App);
+  await setCircleRangeVisible(false);
+}
+
+async function handleOpenDispatchExecute() {
+  const position: [number, number, number] = [
+    118.78045921172324, 32.06041772336888, 720.3799087532078
+  ];
+  const rotation = { pitch: -85.28776550292969, yaw: -175.73117065429688 };
+  await updateCamera(App, position, rotation, 2);
+
+  await deleteAllMovePaths(App);
+
+  vehicleDirection = "forward";
+  isVehicleCar = true;
+  await createMovePath(App, path0, "#32CD32", "scan_line");
+  if (path0.length > 0 && path0[0]) {
+    await createMoveVehicle(App, path0[0]);
+  }
+  await startVehicleMove(App, undefined, undefined, 2.5, false, "play");
+}
+
+async function onArriveWaterPoint() {
+  console.log("🚗💨 到达水体点");
+  setTimeout(async () => {
+    await createMovePath(App, path0, "#32CD32", "scan_line");
+    if (path0.length > 0 && path0[0]) {
+      await createMoveVehicle(App, path0[0]);
+    }
+    await startVehicleMove(App, undefined, undefined, 2.5, true, "play");
+  }, 1200);
+  vehicleDirection = "backward";
+
+  await deleteInundationAlgorithm();
+}
+
+async function onArriveBackStart() {
+  console.log("🚗💨 返回起始点");
+  await deleteVehicle(App);
+  await deleteMovePath(App);
+  isVehicleCar = false;
+  await handleClosePumpCar();
 }
 
 // 处理来自PipeClickInfo-card的AI分析事件
@@ -1753,13 +2390,8 @@ async function openStationCurve(station: string, action?: string) {
 
     switch (station) {
       case "pump1":
-        position = [120.97734909382876, 31.316507687253115, 23.362653086556417];
-        rotation = { pitch: -1.7691400051116943, yaw: -72.36478424072266 };
-        break;
-
-      case "pump2":
-        position = [120.9428333710595, 31.371650716301655, 25.20759203956954];
-        rotation = { pitch: -0.7572699785232544, yaw: 95.45074462890625 };
+        position = [118.76833392150021, 32.033545830492244, 82.45153664034628];
+        rotation = { pitch: -4.962748050689697, yaw: -57.22252655029297 };
         break;
     }
 
@@ -1822,8 +2454,6 @@ async function handleMenuInundationExecutePlan(plan: string, radio: string) {
     });
   }
 }
-
-
 
 async function handleRowClick(fid: string) {
   // 查找对应的管网元素信息

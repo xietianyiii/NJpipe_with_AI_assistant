@@ -23,7 +23,7 @@ export async function createMovePath(
     App: any,
     coordinates: [number, number, number][],
     color: string = "a54cffff",
-    pathType: "arrow" | "arrow_dot" | "scan_line" = "arrow",
+    pathType: "arrow" | "arrow_dot" | "scan_line"| "solid" = "arrow",
     visible: boolean = true
 ): Promise<any> {
     if (!App?.Scene) {
@@ -56,7 +56,7 @@ export async function createMovePath(
         });
 
         const { success } = await App.Scene.Add(path, {
-            calculateCoordZ: { coordZRef: "altitude", coordZOffset: 50 },
+            calculateCoordZ: { coordZRef: "altitude", coordZOffset: 30 },
         });
 
         if (success) {
@@ -84,7 +84,7 @@ export async function createMultiMovePath(
     App: any,
     coordinates: [number, number, number][],
     color: string = "a54cffff",
-    pathType: "arrow" | "arrow_dot" | "scan_line" = "arrow"
+    pathType: "arrow" | "arrow_dot" | "scan_line"| "solid" = "arrow"
 ): Promise<any> {
     if (!App?.Scene) {
         console.error("❌ App 实例无效");
@@ -111,7 +111,7 @@ export async function createMultiMovePath(
         });
 
         const res = await App.Scene.Add(path, {
-            calculateCoordZ: { coordZRef: "ground", coordZOffset: 5 },
+            calculateCoordZ: { coordZRef: "altitude", coordZOffset: 30 },
         });
 
         if (res.success) {
@@ -346,73 +346,123 @@ export async function startVehicleMove(
  * 让任意实体沿路径移动（通用封装）
  *
  * @param App - WDP 实例
- * @param entity - 需要移动的实体对象，例如 particle / model / poi / effects
- * @param path - 已创建的路径对象（App.Path）
+ * @param eid  - 需要移动的实体对象的 EID
+ * @param coordinates  - 路径坐标数组[[lng, lat, z], ...]
+ * @param pitch - 俯仰角度（默认 0）
+ * @param yaw - 偏航角度（默认 0）
+ * @param roll - 横滚角度（默认 0）
  * @param duration - 移动时长（秒）
  * @param loop - 是否循环（true 循环，false 不循环）
  * @param reverse - 是否反向移动
  * @param state - 初始状态（play/pause/stop）
  */
 export async function createEntityMovePath(
-  App: any,
-  entity: any,
-  path: any,
-  pitch: number = 0,
-  yaw: number = 0,
-  roll: number = 0,
-  duration: number = 20,
-  loop: boolean = false,
-  reverse: boolean = false,
-  state: "play" | "pause" | "stop" = "play"
+    App: any,
+    eid: string,
+    coordinates: [number, number, number][],
+    pitch: number = 0,
+    yaw: number = 0,
+    roll: number = 0,
+    duration: number = 20,
+    loop: boolean = false,
+    reverse: boolean = false,
+    state: "play" | "pause" | "stop" = "play"
 ): Promise<any> {
-  if (!App?.Scene) {
-    console.error("❌ App 实例无效，请确认 Scene 模块存在");
-    return null;
-  }
-
-  if (!entity) {
-    console.error("❌ entity 不能为空！你必须传入一个实体对象");
-    return null;
-  }
-
-  if (!path) {
-    console.error("❌ path 不能为空！你必须传入路径对象");
-    return null;
-  }
-
-  try {
-    console.log("🌀 准备让实体沿路径移动...");
-
-    // 1️⃣ 创建 Bound 移动对象
-    const moveObj = new App.Bound({
-      moving: entity,
-      path: path,
-      boundStyle: {
-        time: duration,
-        bLoop: loop,
-        bReverse: reverse,
-        state,
-      },
-      customId: "common-moveObj-id",
-      rotator: { pitch: pitch, yaw: yaw, roll: roll },
-      offset: { left: 0, forward: 0, up: 0 },
-    });
-
-    const res = await App.Scene.Add(moveObj);
-
-    if (res.success) {
-      console.log(
-        `🚗 实体沿路径移动已启动：时长=${duration}s 循环=${loop} 反向=${reverse} 状态=${state} pitch=${pitch} yaw=${yaw} roll=${roll}`
-      );
-    } else {
-      console.warn("⚠️ 启动移动失败:", res);
+    if (!App?.Scene) {
+        console.error("❌ App 实例无效，请确认 Scene 模块存在");
+        return null;
     }
 
-    return moveObj;
-  } catch (error) {
-    console.error("🚨 moveEntityAlongPath 执行出错:", error);
-    return null;
-  }
+    /* ========= 1️⃣ 获取实体并设置 customId ========= */
+    const modelCustomId = `move-model-${eid}`;
+
+    const modelRes = await App.Scene.GetByEids([eid]);
+    if (!modelRes.success || modelRes.result.length === 0) {
+        console.error("❌ 未找到对应 EID 的实体:", eid);
+        return null;
+    }
+
+    const model = modelRes.result[0];
+    model.customId = modelCustomId;
+
+    /* ========= 2️⃣ 创建路径 ========= */
+    const pathCustomId = `move-path-${eid}-${Date.now()}`;
+
+    const path = new App.Path({
+        polyline: {
+            coordinates,
+        },
+        pathStyle: {
+            type: "arrow",
+            width: 20,
+            speedupFactor: 1,
+            opacity: 1,
+            color: "ff8a2aff",
+            passColor: "c9ff23ff",
+        },
+        customId: pathCustomId,
+        bVisible: false,
+    });
+
+    const pathAddRes = await App.Scene.Add(path);
+    if (!pathAddRes.success) {
+        console.error("❌ 路径创建失败");
+        return null;
+    }
+
+    /* ========= 3️⃣ 通过 customId 再次获取（确保是 Scene 实例） ========= */
+    const modelQuery = await App.Scene.GetByCustomId([modelCustomId]);
+    const pathQuery = await App.Scene.GetByCustomId([pathCustomId]);
+
+    if (
+        !modelQuery.success ||
+        modelQuery.result.length === 0 ||
+        !pathQuery.success ||
+        pathQuery.result.length === 0
+    ) {
+        console.error("❌ 无法通过 customId 获取实体或路径");
+        return null;
+    }
+
+    const realModel = modelQuery.result[0];
+    const realPath = pathQuery.result[0];
+
+    /* ========= 4️⃣ 创建绑定移动 ========= */
+    const bound = new App.Bound({
+        moving: realModel,
+        path: realPath,
+        boundStyle: {
+            time: duration,
+            bLoop: loop,
+            bReverse: reverse,
+            state,
+        },
+        rotator: {
+            pitch,
+            yaw,
+            roll,
+        },
+        offset: {
+            left: 0,
+            forward: 0,
+            up: 0,
+        },
+        customId: `move-bound-${eid}-${Date.now()}`,
+    });
+
+    const boundRes = await App.Scene.Add(bound);
+    if (!boundRes.success) {
+        console.error("❌ 创建路径绑定失败");
+        return null;
+    }
+
+    console.log("✅ 实体沿路径移动创建成功", {
+        model: realModel,
+        path: realPath,
+        bound,
+    });
+
+    return bound;
 }
 
 /**
@@ -452,7 +502,7 @@ export async function assignEidEntity(
 
         if (res.success && res.result.length > 0) {
             const model = res.result[0];
-            model.customId = customid;  
+            model.customId = customid;
             console.log("✅ 已获取实体并设置 customId:", model);
             return model;
         } else {

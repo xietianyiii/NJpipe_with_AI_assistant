@@ -247,7 +247,7 @@
                   <el-option label="雨水管井" value="rain_node" />
                   <el-option label="污水管井" value="sewage_node" />
                 </el-select> -->
-                <BaseSelect v-model="hightPieType" :options="hightOptions" placeholder="请选择管网类型" />
+                <BaseSelect v-model="hightPieType" :options="MergeOptions" placeholder="请选择管网类型" />
               </div>
 
               <div class="light-row">
@@ -323,7 +323,7 @@
                   <el-option label="雨水管井" value="rain_node" />
                   <el-option label="污水管井" value="sewage_node" />
                 </el-select> -->
-                <BaseSelect v-model="liquidPipeType" :options="hightOptions" placeholder="请选择管网类型" />
+                <BaseSelect v-model="liquidPipeType" :options="MergeOptions" placeholder="请选择管网类型" />
               </div>
 
               <div class="light-row">
@@ -357,7 +357,7 @@
                   <el-option label="雨水管线" value="rain_line" />
                   <el-option label="污水管线" value="sewage_line" />
                 </el-select> -->
-                <BaseSelect v-model="flowPieType" :options="hightOptions" placeholder="请选择管网类型" />
+                <BaseSelect v-model="flowPieType" :options="MergeOptions" placeholder="请选择管网类型" />
               </div>
 
               <div class="light-row">
@@ -503,6 +503,12 @@ const hightOptions = [
   { label: "雨水管井", value: "rain_node" },
   { label: "污水管井", value: "sewage_node" },
 ];
+
+const MergeOptions = [
+  { label: "雨水管", value: "rain_line" },
+  { label: "污水管", value: "sewage_line" },
+];
+
 const flowStyleOptions = [
   { label: "样式1", value: "0" },
   { label: "样式2", value: "1" },

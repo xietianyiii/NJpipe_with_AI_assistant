@@ -38,8 +38,8 @@ export async function createShpArea(App: any, shpUrls: string[], colors: string[
           coordinates: geoRes.result.polygon2D[0].polygon,
         },
         rangeStyle: {
-          type: "loop_line",
-          fillAreaType: "block",
+          type: "none",
+          fillAreaType: "block2",
           height: 50,
           strokeWeight: 20,
           color,

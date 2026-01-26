@@ -1,24 +1,12 @@
 <template>
   <div class="legend-card">
-    <el-checkbox
-      v-model="checkAll"
-      :indeterminate="isIndeterminate"
-      @change="handleCheckAllChange"
-    >
+    <el-checkbox v-model="checkAll" :indeterminate="isIndeterminate" @change="handleCheckAllChange" class="check-all">
       全选
     </el-checkbox>
-    <el-checkbox-group
-      v-model="checkedCities"
-      @change="handleCheckedCitiesChange"
-      class="checkbox-group-vertical"
-    >
+    <el-checkbox-group v-model="checkedCities" @change="handleCheckedCitiesChange" class="checkbox-group-vertical">
       <el-checkbox v-for="city in cities" :key="city" :label="city" :value="city">
         <span class="checkbox-label">{{ city }}</span>
-        <img 
-          src="@/assets/pngs/markerNormal.png" 
-          class="checkbox-icon" 
-          alt="marker"
-        />
+        <img :src="cityIconMap[city]" class="checkbox-icon" alt="marker" />
       </el-checkbox>
     </el-checkbox-group>
   </div>
@@ -45,6 +33,30 @@ const rainOptions = ['>50mm', '<50mm'];
 const waterlogOptions = ['0mm', '1-15mm', '16-30mm', '30-50mm'];
 const pipeOptions = ['<50%', '50%-100%', '100%', '液位异常', '离线'];
 
+// 不同 city 对应的图标
+const cityIconMap: Record<string, string> = {
+  // pump
+  '雨水泵站': new URL('@/assets/pngs/BG/legend/station/pump.png', import.meta.url).href,
+  '污水泵站': new URL('@/assets/pngs/BG/legend/station/pump.png', import.meta.url).href,
+
+  // rain
+  '>50mm': new URL('@/assets/pngs/BG/legend/station/rain.png', import.meta.url).href,
+  '<50mm': new URL('@/assets/pngs/BG/legend/station/rain.png', import.meta.url).href,
+
+  // waterlog
+  '0mm': new URL('@/assets/pngs/BG/legend/station/waterlog.png', import.meta.url).href,
+  '1-15mm': new URL('@/assets/pngs/BG/legend/station/waterlog.png', import.meta.url).href,
+  '16-30mm': new URL('@/assets/pngs/BG/legend/station/waterlog.png', import.meta.url).href,
+  '30-50mm': new URL('@/assets/pngs/BG/legend/station/waterlog.png', import.meta.url).href,
+
+  // pipe
+  '<50%': new URL('@/assets/pngs/BG/legend/pipe/low.png', import.meta.url).href,
+  '50%-100%': new URL('@/assets/pngs/BG/legend/pipe/middle.png', import.meta.url).href,
+  '100%': new URL('@/assets/pngs/BG/legend/pipe/full.png', import.meta.url).href,
+  '液位异常': new URL('@/assets/pngs/BG/legend/pipe/error.png', import.meta.url).href,
+  '离线': new URL('@/assets/pngs/BG/legend/pipe/offline.png', import.meta.url).href,
+}
+
 // 根据面板类型计算当前选项
 const cities = computed(() => {
   switch (props.legendType) {
@@ -61,12 +73,16 @@ const checkAll = ref(true)
 const isIndeterminate = ref(false)
 const checkedCities = ref<string[]>([]);
 
-watch(() => props.legendType, (newVal) => {
-  checkedCities.value = cities.value;
-  checkAll.value = true;
-  isIndeterminate.value = false;
-  if (newVal) emit("selection-change", checkedCities.value);
-});
+watch(
+  () => props.legendType,
+  (newVal) => {
+    checkedCities.value = cities.value;
+    checkAll.value = true;
+    isIndeterminate.value = false;
+    if (newVal) emit("selection-change", checkedCities.value);
+  },
+  { immediate: true }
+);
 
 const handleCheckAllChange = (val: CheckboxValueType) => {
   checkedCities.value = val ? cities.value : []
@@ -87,28 +103,24 @@ const handleCheckedCitiesChange = (value: CheckboxValueType[]) => {
 <style scoped>
 .legend-card {
   position: absolute;
-  bottom: 1.8vh;
-  left: 20vw;
+  bottom: 10vh;
+  right: 20.5vw;
   width: 6.5vw;
-  background: linear-gradient(
-    to right,
-    rgba(49, 141, 169, 0.7),
-    rgba(79, 99, 113, 0.7)
-  );
+  background: url('@/assets/pngs/BG/legend/bg.png') no-repeat center/ 100% 100%;
   border-radius: 8px;
   padding: 12px;
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
-  backdrop-filter: blur(3px);
-  z-index: 100;
-  font-family: "SimHei", Arial, sans-serif;
-  text-shadow: 0 0 6px #00bfff;
+  backdrop-filter: blur(1px);
+  z-index: 99999;
+  font-family: "AlimamaAgileVF", Arial, sans-serif;
+  pointer-events: auto;
 }
 
 .checkbox-group-vertical {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  margin-top: 8px;
+  margin-top: 4px;
 }
 
 .checkbox-group-vertical :deep(.el-checkbox) {
@@ -128,16 +140,21 @@ const handleCheckedCitiesChange = (value: CheckboxValueType[]) => {
 }
 
 :deep(.el-checkbox__label) {
-  color: #d0d0d0; /* 白灰色 */
+  margin-top: 1px;
+  color: #d0d0d0;
+  font-family: "SourceHanSansCN", Arial, sans-serif;
+  opacity: 0.8;
 }
 
 :deep(.el-checkbox.is-checked .el-checkbox__label) {
   color: #ffffff;
+  font-family: "SourceHanSansCN", Arial, sans-serif;
 }
 
 :deep(.el-checkbox__inner) {
   border-color: #d0d0d0;
   background-color: transparent;
+  transition: all 0.3s ease-in-out;
 }
 
 :deep(.el-checkbox__inner:hover) {
@@ -151,7 +168,19 @@ const handleCheckedCitiesChange = (value: CheckboxValueType[]) => {
 
 :deep(.el-checkbox__input.is-indeterminate .el-checkbox__inner) {
   border-color: #ffffff;
-  background-color: transparent;
+  background: url('@/assets/pngs/BG/legend/checked.png') no-repeat center/ 100% 100%;
 }
 
+:deep(.el-checkbox__input.is-indeterminate .el-checkbox__inner:before) {
+  margin-top: 1px;
+}
+
+:deep(.el-checkbox__inner) {
+  border: none;
+  background: url('@/assets/pngs/BG/legend/check-bg.png') no-repeat center/ 100% 100%;
+}
+
+:deep(.el-checkbox__input.is-checked .el-checkbox__inner) {
+  background: url('@/assets/pngs/BG/legend/checked.png') no-repeat center/ 100% 100%;
+}
 </style>

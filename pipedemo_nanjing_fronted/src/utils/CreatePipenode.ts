@@ -16,8 +16,10 @@ const pipenodeCache = {
  * @param App - WDP 实例
  * @param shpUrl - 管井 SHP 文件路径
  * @param key - 管井标识（如 "rain", "sewage"）
+ * @param pipeNeckDepth - 管井颈部深度（默认 15.4）
+ * @param pipeBottomExpr - 管井底部系数（默认 15.4）
  */
-export async function createPipenode(App: any, shpUrl: string, key: string): Promise<void> {
+export async function createPipenode(App: any, shpUrl: string, key: string, pipeNeckDepth: number = 0.4, pipeBottomExpr: number = 1): Promise<void> {
     if (!App) {
         console.warn("⚠️ App 实例无效，无法创建管井");
         return;
@@ -62,11 +64,12 @@ export async function createPipenode(App: any, shpUrl: string, key: string): Pro
                             },
                             {
                                 StandardName: "WellNeckDepth",
-                                DefaultValue: "0.4"
+                                DefaultValue: pipeNeckDepth.toString(),
                             },
                             {
                                 StandardName: "WellBottomDepth",
-                                FeatureName: "jds"
+                                FeatureName: "jds",
+                                "Expression": `param(jds)*${pipeBottomExpr}`
                             },
                             {
                                 StandardName: "WellRoomSize",

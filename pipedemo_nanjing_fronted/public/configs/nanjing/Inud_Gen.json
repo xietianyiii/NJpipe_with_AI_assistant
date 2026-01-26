@@ -1,0 +1,47 @@
+{
+  "algorithmType": "FloodForShp",
+  "customId": "flood_default",
+  "customData": "",
+  "file": {
+    "tifURL": "http://10.100.10.124:8090/inundation/water_point_grid/nanjing/waterlog-dem.tif",
+    "shpURL": "http://10.100.10.124:8090/inundation/water_point_grid/nanjing/waterlog-grid-nj.shp",
+    "shxURL": "http://10.100.10.124:8090/inundation/water_point_grid/nanjing/waterlog-grid-nj.shx",
+    "prjURL": "http://10.100.10.124:8090/inundation/water_point_grid/nanjing/waterlog-grid-nj.prj",
+    "dbfURL": "http://10.100.10.124:8090/inundation/water_point_grid/nanjing/waterlog-grid-nj.dbf",
+    "override": true
+  },
+  "data": [
+        {
+            "gridIdArray": [
+                1
+            ],
+            "valueArray": [
+                1.5
+            ]
+        },
+        {
+            "gridIdArray": [
+                1
+            ],
+            "valueArray": [
+                2.1
+            ]
+        },
+        {
+            "gridIdArray": [
+                1
+            ],
+            "valueArray": [
+                2.5
+            ]
+        },
+        {
+            "gridIdArray": [
+                1
+            ],
+            "valueArray": [
+                2.2
+            ]
+        }
+    ]
+}

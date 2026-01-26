@@ -268,7 +268,7 @@ watch(
 );
 
 // 监听值变化并触发动画
-let animationTimeouts: number[] = [];
+let animationTimeouts: ReturnType<typeof setTimeout>[] = [];
 
 onBeforeUnmount(() => {
   // 清除所有待执行的定时器
@@ -294,7 +294,7 @@ const triggerValueChangeAnimation = (selector: string) => {
       const timeout = setTimeout(() => {
         el.classList.remove("value-change-animation");
         // 从 timeouts 数组中移除已执行的定时器
-        const index = animationTimeouts.indexOf(timeout);
+        const index = animationTimeouts.indexOf(timeout as NodeJS.Timeout);
         if (index > -1) {
           animationTimeouts.splice(index, 1);
         }

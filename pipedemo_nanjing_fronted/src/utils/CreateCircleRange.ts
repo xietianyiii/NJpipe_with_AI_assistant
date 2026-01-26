@@ -52,7 +52,7 @@ export async function createCircleRange(
                 shape: "circle", // 类型固定为圆
                 type, // 波纹类型、轮廓线等
                 fillAreaType, // 填充模式
-                height: 200, // 围栏高度（米）
+                height: 50, // 围栏高度（米）
                 strokeWeight: 10, // 轮廓线宽度
                 color: "b7ff94ff", // 区域颜色
             },

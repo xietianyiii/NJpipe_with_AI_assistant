@@ -106,7 +106,6 @@
             </div>
           </BaseCard>
         </div>
-
       </div>
     </div>
   </div>
@@ -128,14 +127,15 @@ const emit = defineEmits<{
   (e: "close-water-moni"): void;
   (e: "create-waterlog-poi"): void;
   (e: "close-waterlog-poi"): void;
+  (e: "wtlog-click", index: number): void;
 }>();
 
 const defectRows = ref([
   { id: "华新", time: "06-01 14:00", level: "12.5", type: "道路" },
   { id: "徐泾", time: "06-01 14:00", level: "10.8", type: "道路" },
   { id: "青浦", time: "06-01 14:00", level: "11.2", type: "道路" },
-  { id: "秦家角", time: "06-01 14:00", level: "13.0", type: "下立交" },
-  { id: "青浦", time: "06-01 14:00", level: "12.0", type: "道路" },
+  { id: "秦家角", time: "06-01 14:00", level: "36.0", type: "公园" },
+  { id: "青浦", time: "06-01 14:00", level: "16.6", type: "道路" },
 ]);
 
 const defectColumns = [
@@ -148,6 +148,7 @@ const defectColumns = [
 const onWaterlogRowClick = (rowIndex: number, rowData: any) => {
   console.log("点击行索引:", rowIndex);
   console.log("行数据:", rowData);
+  emit("wtlog-click", rowIndex);
 };
 
 function onCreateRainPoiClick() {

@@ -2,42 +2,45 @@
   <div v-show="visible" class="draggable-card" :style="{ top: position.y + 'px', left: position.x + 'px' }"
     @mousedown="startDrag" ref="cardRef">
     <div class="card-header">
-      <span class="card-header-text">缺陷信息 </span>
+      <span class="card-header-text">湖泊监测 </span>
       <button class="close-btn" @click="$emit('close')">✕</button>
     </div>
 
     <div class="card-body">
-      <div class="mapping-header">
-        <span class="header-item">字段</span>
-        <span class="header-item">属性</span>
-      </div>
-      <div class="mapping-row">
-        <span class="field-item">管网代码</span><span class="value-item">{{ detailData.id }}</span>
-      </div>
-      <div class="mapping-row">
-        <span class="field-item">材质</span><span class="value-item">{{ detailData.material }}</span>
-
-      </div>
-      <div class="mapping-row">
-        <span class="field-item">管径</span><span class="value-item">{{ detailData.diameter }} mm</span>
-      </div>
-      <div class="mapping-row">
-        <span class="field-item">长度</span><span class="value-item">{{ detailData.length }} m</span>
-      </div>
-      <div class="mapping-row">
-        <span class="field-item">位置</span>
-        <span class="value-item">{{ detailData.location }}</span>
+      <div class="river-level-row">
+        <label class="river-level-label">当前湖泊水位值：</label>
+        <span class="river-level-value">{{ displayedRiverLevel }}</span>
       </div>
 
-      <div class="mapping-row">
-        <span class="field-item">缺陷类型</span>
-        <span class="value-item">{{ detailData.defect }}</span>
+      <!-- 第二行：修改湖泊水位 -->
+      <div class="river-level-modify-row">
+        <label class="river-level-modify-label">修改湖泊水位：</label>
+        <BaseNumberInput v-model="riverLevel" :min="5" :max="12" :step="1" width="80px" class="river-level-input" />
+
       </div>
 
-      <div class="defect-image">
-        <img src="@/assets/pngs/管网.png" alt="缺陷图片" style="max-width: 210px" , height="auto" />
+      <!-- 第三行：操作按钮 -->
+      <div class="button-row">
+        <el-button type="primary" size="small" @click="updateRiverLevel" class="action-button">
+          <svg t="1760585811887" class="icon dispatch-icon" viewBox="0 0 1024 1024" version="1.1"
+            xmlns="http://www.w3.org/2000/svg" p-id="95794" width="30" height="30">
+            <path
+              d="M724.3 553.9L583.2 681c-23.3 23.3-61.5 23.3-84.9 0V343c23.3-23.3 61.5-23.3 84.9 0l141.1 126.1c23.3 23.3 23.3 61.5 0 84.8z"
+              fill="#ffffff" p-id="95795"></path>
+            <path
+              d="M508.3 553.9L367.2 681c-23.3 23.3-61.5 23.3-84.9 0V343c23.3-23.3 61.5-23.3 84.9 0l141.1 126.1c23.3 23.3 23.3 61.5 0 84.8z"
+              fill="#ffffff" p-id="95796"></path>
+          </svg>
+        </el-button>
+        <el-button type="warning" size="small" @click="resetRiverLevel" class="action-button">
+          <svg t="1763461177116" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg"
+            p-id="27116" width="15" height="15">
+            <path
+              d="M944.5 376.6c3.6-8.7 5.7-18.1 6.1-27.9 0-1.1 0-2.1 0.1-3.2v-1l-1.7-184c-0.4-45.3-37.3-81.8-82.5-81.8h-0.8c-41 0.4-74.7 30.5-80.8 69.8-9.8-7.1-19.9-13.8-30.3-20.1-102.5-62.1-223.1-80.6-339.5-52C298.8 104.8 200.5 177 138.4 279.5S57.8 502.6 86.4 619s100.7 214.7 203.2 276.8c71 43 150.7 65.1 231.7 65.1 35.9 0 72-4.3 107.8-13.1C745.5 919.2 843.8 847 905.9 744.5c23.6-39 11.2-89.8-27.8-113.4-39-23.6-89.8-11.2-113.4 27.8-81 133.7-255.7 176.6-389.5 95.6-64.8-39.2-110.4-101.4-128.5-174.9-18.1-73.6-6.4-149.7 32.9-214.5 80.1-132.1 251.6-175.6 384.7-98.4-36.3 9-63.1 41.9-62.7 80.9 0.4 45.3 37.3 81.8 82.5 81.8h0.8l184-1.7c31.3-0.3 58.5-18 72.2-43.9 1.2-2.2 2.2-4.5 3.2-6.8 0.1-0.1 0.2-0.3 0.2-0.4z"
+              fill="#ffffff" p-id="27117"></path>
+          </svg>
+        </el-button>
       </div>
-
     </div>
   </div>
 </template>
@@ -46,28 +49,21 @@
 import {
   ref,
   watch,
-  onMounted,
-  onBeforeUnmount,
-  nextTick,
-  computed,
+  onBeforeUnmount
 } from "vue";
-import * as echarts from "echarts";
+
+import BaseNumberInput from "@/components/ReuseCop/BaseNumInput.vue";
+
+const displayedRiverLevel = ref(5.0); // 显示的水位值，默认为0+1=1
+const riverLevel = ref(5.0); // 输入框的值
 
 const props = defineProps<{
   visible: boolean
-  detailData: {
-    id: string
-    material: string
-    diameter: string
-    length: string
-    location: string
-    defect: string
-  }
 }>()
 
-const emit = defineEmits(["close"]);
+const emit = defineEmits(["close", "river-level-updated"]);
 
-const position = ref({ x: 1250, y: 380 });
+const position = ref({ x: 1200, y: 470 });
 const isDragging = ref(false);
 const offset = ref({ x: 0, y: 0 });
 const cardRef = ref<HTMLElement | null>(null);
@@ -80,7 +76,7 @@ const BOUND = {
   minX: 50,
   maxX: 1600,
   minY: 100,
-  maxY: 370,
+  maxY: 700,
 };
 
 const startDrag = (e: MouseEvent) => {
@@ -198,68 +194,46 @@ watch(
   () => props.visible,
   (n) => {
     if (n) {
-      position.value = { x: 1250, y: 380 };
+      position.value = { x: 1200, y: 470 };
     }
   }
 );
 
-// 监听值变化并触发动画
-let animationTimeouts: ReturnType<typeof setTimeout>[] = [];
 
-onBeforeUnmount(() => {
-  // 清除所有待执行的定时器
-  animationTimeouts.forEach((timeout) => clearTimeout(timeout));
-});
-
-// 当任何值发生变化时，为对应的元素添加动画类
-const triggerValueChangeAnimation = (selector: string) => {
-  nextTick(() => {
-    const elements = document.querySelectorAll(selector);
-    elements.forEach((el) => {
-      const element = el as HTMLElement;
-      // 先移除可能存在的动画类，确保动画能重新触发
-      element.classList.remove("value-change-animation");
-
-      // 强制重排，确保移除类后能重新触发动画
-      element.offsetHeight;
-
-      // 添加动画类
-      element.classList.add("value-change-animation");
-
-      // 设置定时器在动画结束后移除类
-      const timeout = setTimeout(() => {
-        el.classList.remove("value-change-animation");
-        // 从 timeouts 数组中移除已执行的定时器
-        const index = animationTimeouts.indexOf(timeout as NodeJS.Timeout);
-        if (index > -1) {
-          animationTimeouts.splice(index, 1);
-        }
-      }, 500); // 动画持续时间应与 CSS 中定义的相同
-
-      // 将定时器添加到数组中
-      animationTimeouts.push(timeout);
-    });
-  });
+// 河道监测执行方法
+const updateRiverLevel = () => {
+  // 更新显示的水位值
+  const v = Number(riverLevel.value) || 0;
+  displayedRiverLevel.value = v;
+  console.log("执行河道监测，当前水位值:", displayedRiverLevel.value);
+  // 触发一个事件通知父组件水位已更新
+  emit("river-level-updated", riverLevel.value);
 };
 
-watch(
-  () => props.detailData,
-  () => {
-    triggerValueChangeAnimation(".value-item")
-  },
-  { deep: true }
-)
+// 河道监测重置方法
+const resetRiverLevel = () => {
+  console.log("重置河道监测");
+  riverLevel.value = 5.0;
+  displayedRiverLevel.value = 5.0;
+  emit("river-level-updated", riverLevel.value);
+};
+
+onBeforeUnmount(() => {
+  document.removeEventListener("mousemove", onDrag);
+  document.removeEventListener("mouseup", stopDrag);
+});
+
 </script>
 
 <style scoped>
 .draggable-card {
   position: absolute;
-  width: 260px;
+  width: 300px;
   background: rgba(23, 50, 88, 0.6);
   border: 1px solid rgba(214, 245, 255, 0.2);
   box-sizing: border-box;
   border-radius: 12px;
-  box-shadow: 0 0 5px rgba(0, 191, 255, 0.8);
+  box-shadow: 0 0 15px rgba(0, 191, 255, 0.8);
   padding: 16px 20px;
   font-size: 14px;
   z-index: 999;
@@ -272,7 +246,7 @@ watch(
 }
 
 .draggable-card:hover {
-  box-shadow: 0 3px 10px rgba(0, 191, 255, 1);
+  box-shadow: 0 5px 20px rgba(0, 191, 255, 1);
 }
 
 .draggable-card:active {
@@ -345,6 +319,9 @@ watch(
   color: #ffffff;
   animation: contentFadeIn 0.3s ease-out 0.2s both;
   font-size: 13px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
 }
 
 @keyframes contentFadeIn {
@@ -359,80 +336,32 @@ watch(
   }
 }
 
-.mapping-header {
-  display: flex;
-  justify-content: space-between;
-  padding: 10px 0;
-  opacity: 1;
-  border-radius: 8px;
-  background: linear-gradient(180deg,
-      rgba(36, 104, 190, 0.06) 0%,
-      rgba(0, 144, 211, 0.6) 105%);
-  box-sizing: border-box;
-  border: 0.81px solid rgba(65, 129, 225, 0.3);
-  margin-bottom: 3px;
-}
-
-.header-item {
-  flex: 1;
-  text-align: center;
-  font-size: 13px;
-  font-weight: lighter;
-}
-
-.mapping-row {
-  display: flex;
-  justify-content: space-between;
-  padding: 8px 0;
-  border-bottom: 1px dashed rgba(214, 245, 255, 0.2);
-  max-height: 16px;
-  font-size: 12px;
-  border-radius: 5.04px;
-}
-
-.mapping-row:nth-child(odd) {
-  background: rgba(79, 111, 120, 0.2);
-}
-
-.field-item,
-.value-item {
-  flex: 1;
-  text-align: center;
-  line-height: 16px;
+.river-level-modify-row {
   display: flex;
   align-items: center;
-  justify-content: center;
+  gap: 10px;
 }
 
-/* 为值变化添加特殊的动画效果 */
-.value-item.value-change-animation {
-  animation: valueChange 0.2s ease-in-out;
+.action-button {
+  flex: 1;
+  font-family: "SHJGSK";
+  background-color: rgba(36, 74, 85, 0.7);
+  border: 1px solid rgba(170, 151, 151, 0.8);
+  border-radius: 6px;
+  box-shadow: 0 0 5px rgba(0, 191, 255, 0.5);
+  transition: all 0.3s ease;
 }
 
-@keyframes valueChange {
-  0% {
-    opacity: 0.9;
-    transform: scale(1);
-  }
-
-  50% {
-    opacity: 1;
-    transform: scale(1);
-  }
-
-  100% {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
+.action-button:hover {
+  background: radial-gradient(circle at 0% 60%,
+      #1a918b 0%,
+      #0099c8 60%,
+      #00e5ff 100%);
+  box-shadow: 0 0 10px rgba(0, 255, 255, 1);
 }
-.defect-image{
+
+.button-row {
   display: flex;
-  justify-content: center;
-}
-.defect-image img {
-  width: 100%;
-  border-radius: 4px;
-  margin-top: 12px;
-  -webkit-user-drag: none;
+  gap: 10px;
 }
 </style>

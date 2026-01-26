@@ -11,8 +11,7 @@
       <div class="sidebar-right">
         <div class="sidebar-right-card card1">
           <BaseCard title="积水告警" titleType="right" :contentBg="contentLbg1" width="344px" height="130px"
-            contentClass="Rcard1-content-row" clickable @titleClick="onOpenPumpCarClick"
-            @titleCancel="onClosePumpCarClick">
+            contentClass="Rcard1-content-row">
             <!-- <div class="Rcard1-content-row row1">
               <div class="Rcard1-row1-icon">
                 <img class="Rcard1-row1-icon-img" src="@/assets/pngs/BG/sidebar/Sim/card1/tatal-point.png" />
@@ -57,7 +56,8 @@
 
         <div class="sidebar-right-card card2">
           <BaseCard title="防汛泵车" titleType="right" :contentBg="contentRbg2" width="344px" height="620px"
-            contentClass="Rcard2-content-row">
+            contentClass="Rcard2-content-row" clickable @titleClick="onOpenPumpCarClick"
+            @titleCancel="onClosePumpCarClick">
             <div class="Rcard2-content-item1">
               <div class="Rcard1-content-row row1">
                 <div class="Rcard1-row1-icon">
@@ -167,10 +167,12 @@
             </div>
             <div class="Rcard2-content-item3">
               <div class="Rcard2-row-button-container">
-                <div class="Rcard2-content-item3-button1">
+                <div class="Rcard2-content-item3-button1" :class="{ active: activeButton === 'smart' }"
+                  @click="toggleDispatch('smart')">
                   智能调度
                 </div>
-                <div class="Rcard2-content-item3-button2">
+                <div class="Rcard2-content-item3-button2" :class="{ active: activeButton === 'manual' }"
+                  @click="toggleDispatch('manual')">
                   人工调度
                 </div>
               </div>
@@ -210,10 +212,12 @@
                   </div>
                 </div>
                 <div class="Rcard2-column-button-container">
-                  <div class="Rcard2-content-item3-button3">
+                  <div class="Rcard2-content-item3-button3" :class="{ disabled: isPlanDisabled, active: planActive }"
+                    @click="handleDispatchPlan">
                     调度方案
                   </div>
-                  <div class="Rcard2-content-item3-button4">
+                  <div class="Rcard2-content-item3-button4" :class="{ disabled: isExecuteDisabled }"
+                    @click="handleDispatchExecution">
                     调度执行
                   </div>
                 </div>
@@ -229,7 +233,7 @@
 </template>
 
 <script setup lang="ts">
-import { defineAsyncComponent, ref } from "vue";
+import { defineAsyncComponent, ref, computed } from "vue";
 import contentLbg1 from "@/assets/pngs/BG/sidebar/card/background/L_Content1.png";
 import contentRbg2 from "@/assets/pngs/BG/sidebar/card/background/R_Content2.png";
 
@@ -240,12 +244,20 @@ import BaseSelect from "@/components/ReuseCop/BaseSelect.vue";
 const emit = defineEmits<{
   (e: "open-pump-car"): void;
   (e: "close-pump-car"): void;
+  (e: "open-dispatch-plan"): void;
+  (e: "close-dispatch-plan"): void;
+  (e: "open-dispatch-execute"): void;
 }>();
 
 const sortValue = ref<string | number | null>(null)
 const manageValue = ref<string | number | null>(null)
 const typeValue = ref<string | number | null>(null)
-const statusValue = ref<string | number | null>(null)
+const statusValue = ref<string[]>([]);
+
+const planActive = ref(false);
+
+type DispatchType = "smart" | "manual";
+const activeButton = ref<DispatchType | null>(null);
 
 const sortOptions = [
   { label: "最近距离", value: "A" },
@@ -280,6 +292,73 @@ function onOpenPumpCarClick() {
 function onClosePumpCarClick() {
   emit("close-pump-car");
 }
+
+function resetFilters() {
+  sortValue.value = null;
+  manageValue.value = null;
+  typeValue.value = null;
+  statusValue.value = [];
+}
+
+
+function applySmartDefaults() {
+  sortValue.value = sortOptions[0]!.value;
+  manageValue.value = manageOptions[0]!.value;
+  typeValue.value = typeOptions[0]!.value;
+  statusValue.value = statusOptions.map(o => o.value);
+}
+
+function toggleDispatch(type: DispatchType) {
+  const isSame = activeButton.value === type;
+
+  if (isSame) {
+    activeButton.value = null;
+    resetFilters();
+    return;
+  }
+
+  activeButton.value = type;
+
+  if (type === "smart") {
+    applySmartDefaults();
+  } else {
+    resetFilters();
+  }
+}
+
+const isPlanDisabled = computed(() => {
+  return (
+    sortValue.value === null ||
+    manageValue.value === null ||
+    typeValue.value === null ||
+    statusValue.value.length === 0
+  );
+});
+
+const isExecuteDisabled = computed(() => {
+  return !planActive.value || isPlanDisabled.value;
+});
+
+function handleDispatchPlan() {
+  // 禁用时：如果当前没开，就直接 return；如果当前已开，可以允许关闭（更合理）
+  if (isPlanDisabled.value && !planActive.value) return;
+
+  if (planActive.value) {
+    planActive.value = false;
+    emit("close-dispatch-plan");
+  } else {
+    planActive.value = true;
+    emit("open-dispatch-plan");
+  }
+}
+
+
+function handleDispatchExecution() {
+  if (isExecuteDisabled.value) return;
+
+  emit("open-dispatch-execute")
+}
+
 </script>
 
 
@@ -483,22 +562,45 @@ function onClosePumpCarClick() {
   transition: all 0.3s ease-in-out;
 }
 
+.Rcard2-content-item3-button3.disabled,
+.Rcard2-content-item3-button4.disabled {
+  opacity: 0.4;
+  pointer-events: none;
+  filter: grayscale(1);
+}
+
 .Rcard2-content-item3-button1:hover,
 .Rcard2-content-item3-button2:hover {
   background: url("@/assets/pngs/BG/sidebar/card/card6-svg/hover.png") no-repeat center/ contain;
   cursor: pointer;
 }
 
+.Rcard2-content-item3-button3:hover {
+  background: url("@/assets/pngs/BG/sidebar/Sim/button/backhover.png") no-repeat center/ contain;
+  cursor: pointer;
+}
 
-.Rcard2-content-item3-button3:hover,
+.Rcard2-content-item3-button1.active,
+.Rcard2-content-item3-button2.active {
+  background: url("@/assets/pngs/BG/sidebar/card/card6-svg/hover.png") no-repeat center / contain;
+  filter: brightness(1.1);
+}
+
 .Rcard2-content-item3-button4:hover {
   cursor: pointer;
-  transform: scale(1.05);
+  transform: scale(1.02);
 }
 
 .Rcard2-content-item3-button3:active,
 .Rcard2-content-item3-button4:active {
   transform: scale(0.98);
+}
+
+.Rcard2-content-item3-button3.active { 
+  background: url("@/assets/pngs/BG/sidebar/Sim/button/backhover.png") no-repeat center/ 100% 100%;
+  width: 271px;
+  height: 26px;
+  filter: brightness(1.1);
 }
 
 .Rcard2-chart-container {

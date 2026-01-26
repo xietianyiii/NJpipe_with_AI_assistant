@@ -33,7 +33,7 @@ onMounted(() => {
         data: [
           {
             value: 804,
-            name: '结构',
+            name: '悬挂',
             itemStyle: {
               color: {
                 type: 'linear',
@@ -52,7 +52,7 @@ onMounted(() => {
           },
           {
             value: 735,
-            name: '脱节',
+            name: '错位',
             itemStyle: {
               color: {
                 type: 'linear',
@@ -71,7 +71,7 @@ onMounted(() => {
           },
           {
             value: 280,
-            name: '变形',
+            name: '交叉',
             itemStyle: {
               color: {
                 type: 'linear',
@@ -90,7 +90,7 @@ onMounted(() => {
           },
           {
             value: 184,
-            name: '腐蚀',
+            name: '偏差',
             itemStyle: {
               color: {
                 type: 'linear',

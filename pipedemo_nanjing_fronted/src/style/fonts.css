@@ -14,3 +14,8 @@
   font-family: "AlimamaAgileVF";
   src: url("@/assets/fonts/AlimamaAgileVF-Thin.ttf") format("truetype");
 }
+
+@font-face {
+  font-family: "SourceHanSansCN";
+  src: url("@/assets/fonts/SourceHanSansCN-Regular.otf") format("opentype");
+}

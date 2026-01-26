@@ -52,7 +52,7 @@ export async function createPipeline(App: any, shpUrl: string, key: string): Pro
                         { StandardName: "PipeSurfaceAltitudeEnd", FeatureName: "zdg" },
                         { StandardName: "PipeBurialDepthStart", FeatureName: "qdm" },
                         { StandardName: "PipeBurialDepthEnd", FeatureName: "zdm" },
-                        { StandardName: "PipeDiameter", FeatureName: "gj"},
+                        { StandardName: "PipeDiameter", FeatureName: "gj" },
                         // { StandardName: "PipeDiameter", FeatureName: "gj", "Expression": "param(gj)*2" },
                         {
                             StandardName: "PipeMaterial",
@@ -232,6 +232,11 @@ export async function setPipelineVisible(
 
     try {
         console.log(`👁️ 正在${visible ? "显示" : "隐藏"} ${key} 管网...`);
+        if (visible == false) {
+            await deletePipelineLabel(App, "PipeInfo");
+            await deletePipelineLabel(App, "WellInfo");
+            await deletePipelineLabel(App, "Fluid");
+        }
 
         const jsondata = {
             apiClassName: "WimPipeAPI",
