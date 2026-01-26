@@ -2,162 +2,195 @@
 <html lang="zh-CN">
 
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=500, height=320, user-scalable=no" />
-    <title>雨量站1监测信息</title>
-    <style>
-        body {
-            margin: 0;
-            font-family: "Microsoft YaHei", sans-serif;
-            background-color: rgba(79, 99, 113, 0.7);
-            color: #ffffff;
-            font-size: 14px;
-            width: 450px;
-            height: 200px;
-            overflow: hidden;
-            border-radius: 11px;
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
-            backdrop-filter: blur(3px);
-        }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=220, height=200, user-scalable=no" />
+  <title>泵站监测信息</title>
+  <style>
+    @font-face {
+      font-family: "YouSheBiaoTiHei";
+      src: url("http://10.100.10.124:8090/inundation/poi/fonts/YouSheBiaoTiHei-2.ttf") format("truetype");
+      font-weight: normal;
+      font-style: normal;
+    }
 
-        .header {
-            background: linear-gradient(to right,
-                    rgba(49, 141, 169, 0.7),
-                    rgba(79, 99, 113, 0.7));
-            color: #fff;
-            font-weight: 600;
-            padding: 15px 18px;
-            font-size: 30px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            text-shadow: 0 0 6px #00bfff;
-            border: none;
-            backdrop-filter: blur(1px);
-        }
+    @font-face {
+      font-family: "AliMaMaShuHeiTi";
+      src: url("http://10.100.10.124:8090/inundation/poi/fonts/阿里妈妈数黑体.ttf") format("truetype");
+    }
 
-        .content {
-            padding: 18px 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 55px;
-        }
+    @font-face {
+      font-family: "AlimamaAgileVF";
+      src: url("http://10.100.10.124:8090/inundation/poi/fonts/AlimamaAgileVF-Thin.ttf") format("truetype");
+    }
 
-        .row {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
+    body {
+      font-family: "AlimamaAgileVF", sans-serif;
+      color: #ffffff;
+      overflow: hidden;
+      width: 220px;
+      height: 200px;
+    }
 
-        .label {
-            color: #faf4f4;
-            min-width: 100px;
-            font-size: 24px;
-            text-shadow: #58f0f0 0 0 1px;
-            font-family: "YSBTHeiTi", Arial, sans-serif;
-        }
+    .pump-card {
+      background: url("http://10.100.10.124:8090/inundation/poi/poi-window-bg-short.png") no-repeat center/ contain;
+      width: 220px;
+      height: 105px;
+      display: flex;
+      flex-direction: column;
+    }
 
-        .value {
-            font-weight: bold;
-            color: #ffffff;
-            text-shadow: #566fff 0 0 8px;
-            font-size: 24px;
-            font-family: "YSBTHeiTi", sans-serif;
-        }
+    /* ===== Header ===== */
+    .header-container {
+      display: flex;
+      justify-content: center;
+    }
 
-        .status-dots {
-            display: flex;
-            gap: 90px;
-        }
+    .header {
+      background: url("http://10.100.10.124:8090/inundation/poi/poi-window-title-bg.png") no-repeat center / contain;
+      width: 184px;
+      height: 24px;
+      color: #ffffff;
+      padding: 6px 10px;
+      font-size: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-family: "YouSheBiaoTiHei", sans-serif;
+      margin: 6px 10px;
+    }
 
-        .dot {
-            width: 21px;
-            height: 21px;
-            border-radius: 50%;
-            border: 1px solid #999;
-        }
+    /* ===== Content ===== */
+    .content {
+      font-family: "AlimamaAgileVF", sans-serif;
+      padding: 1px 15px;
+      display: flex;
+      flex-direction: column;
+    }
 
-        .dot.green {
-            background: #00cc44;
-            box-shadow: 0 0 4px #00cc44;
-        }
+    .content>*+* {
+      margin-top: 5px;
+    }
 
-        .dot.red {
-            background: #ff3333;
-            box-shadow: 0 0 4px #ff3333;
-        }
+    /* ===== Rows ===== */
+    .row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
 
-        .dot.gray {
-            background: #bbb;
-            box-shadow: 0 0 4px #bbb;
-        }
+    .label {
+      color: rgba(214, 245, 255, 0.85);
+      min-width: 60px;
+      font-size: 12px;
+    }
 
-        button {
-            background: linear-gradient(to right,
-                    rgba(49, 141, 169, 0.7) 0%,
-                    rgba(79, 99, 113, 0.7) 33%,
-                    rgba(45, 198, 245, 0.7) 66%,
-                    rgba(39, 77, 104, 0.7) 100%);
-            background-size: 200% 100%;
-            background-position: 0% 0%;
-            color: #dcd9ff;
-            font-weight: 600;
-            font-family: "SimHei", Arial, sans-serif;
-            text-shadow: 0 0 6px #00bfff;
-            border: none;
-            border-radius: 4px;
-            padding: 4px 10px;
-            cursor: pointer;
-            backdrop-filter: blur(1px);
-            font-size: 24px;
-            transition: all 0.3s ease;
-        }
+    .value {
+      font-weight: 600;
+      color: #ffffff;
+      font-size: 12px;
+    }
 
-        button:hover {
-            background-position: -100% 0%;
-            transform: scale(1.01);
-        }
+    /* ===== Status Dots ===== */
+    .status-dots {
+      display: flex;
+    }
 
-    </style>
+    .status-dots>*+* {
+      margin-left: 4px;
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      border: 1px solid rgba(214, 245, 255, 0.4);
+    }
+
+    /* 运行中（冷青绿） */
+    .dot.green {
+      background: rgba(0, 255, 200, 0.85);
+      box-shadow: 0 0 6px rgba(0, 255, 200, 0.8);
+    }
+
+    /* 异常（冷红，压饱和） */
+    .dot.red {
+      background: rgba(255, 80, 80, 0.8);
+      box-shadow: 0 0 6px rgba(255, 80, 80, 0.6);
+    }
+
+    /* 未启用 */
+    .dot.gray {
+      background: rgba(180, 190, 200, 0.6);
+      box-shadow: 0 0 4px rgba(180, 190, 200, 0.4);
+    }
+
+    /* ===== Button ===== */
+    .header-button {
+      background: url("http://10.100.10.124:8090/inundation/poi/poi-window-button-bg.png") no-repeat center / contain;
+      width: 49px;
+      height: 18px;
+      font-size: 12px;
+      font-weight: 600;
+      font-family: "AlimamaAgileVF", sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .header-button:hover {
+      transform: scale(1.05);
+    }
+
+    /* ===== Footer ===== */
+    .footer {
+      margin-top: 8px;
+      text-align: right;
+      font-size: 12px;
+      color: rgba(214, 245, 255, 0.8);
+    }
+  </style>
 </head>
 
 <body>
-    <div class="header">
+  <div class="pump-card">
+    <div class="header-container">
+      <div class="header">
         <div>雨量站1</div>
         <div>
-            <button id="btnCurve">降雨曲线</button>
+          <div class="header-button" id="btnCurve">曲线</div>
         </div>
+      </div>
     </div>
-
-    <script>
-        const urlParams = new URLSearchParams(window.location.search);
-        const index = urlParams.get("index") || 0;
-
-        document.getElementById("btnCurve").addEventListener("click", () => {
-            if (typeof w51_event === "function") {
-                w51_event("openCurve", { station: "rain1", index: Number(index), type: "rain1" });
-            } else {
-                console.warn("⚠️ 当前不在 WDP 环境中,w51_event 不可用");
-            }
-        });
-    </script>
 
     <div class="content">
-        <div class="row">
-            <div class="label">降雨量：</div>
-            <div class="value">60mm/h</div>
+      <div class="row">
+        <div class="label">降雨量：</div>
+        <div class="value">60mm/h</div>
+      </div>
+
+      <div class="row">
+        <div class="label">状态：</div>
+        <div class="status-dots">
+          <div class="dot red"></div>
         </div>
-
-        <div class="row" style="visibility: hidden;">placeholder</div>
-
-        <div class="row">
-            <div class="label">状态：</div>
-            <div class="status-dots">
-                <div class="dot red"></div>
-            </div>
-        </div>
-
+      </div>
     </div>
+  </div>
+
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const index = urlParams.get("index") || 0;
+
+    document.getElementById("btnCurve").addEventListener("click", () => {
+      if (typeof w51_event === "function") {
+        w51_event("openCurve", { station: "rain1", index: Number(index), type: "rain1" });
+      } else {
+        console.warn("⚠️ 当前不在 WDP 环境中,w51_event 不可用");
+      }
+    });
+  </script>
 </body>
 
 </html>

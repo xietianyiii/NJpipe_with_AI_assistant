@@ -3,64 +3,73 @@
 
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=250, height=180, user-scalable=no" />
+    <meta name="viewport" content="width=220, height=200, user-scalable=no" />
     <title>泵站监测信息</title>
     <style>
         @font-face {
             font-family: "YouSheBiaoTiHei";
-            src: url("@/assets/fonts/YouSheBiaoTiHei-2.ttf") format("truetype");
+            src: url("http://10.100.10.124:8090/inundation/poi/fonts/YouSheBiaoTiHei-2.ttf") format("truetype");
             font-weight: normal;
             font-style: normal;
         }
 
         @font-face {
             font-family: "AliMaMaShuHeiTi";
-            src: url("@/assets/fonts/阿里妈妈数黑体.ttf") format("truetype");
+            src: url("http://10.100.10.124:8090/inundation/poi/fonts/阿里妈妈数黑体.ttf") format("truetype");
         }
 
         @font-face {
             font-family: "AlimamaAgileVF";
-            src: url("@/assets/fonts/AlimamaAgileVF-Thin.ttf") format("truetype");
+            src: url("http://10.100.10.124:8090/inundation/poi/fonts/AlimamaAgileVF-Thin.ttf") format("truetype");
         }
 
         body {
-            margin: 0;
             font-family: "AlimamaAgileVF", sans-serif;
-            background: rgba(23, 50, 88, 0.6);
-            backdrop-filter: blur(6px);
             color: #ffffff;
-            font-size: 14px;
-            width: 220px;
-            height: 170px;
             overflow: hidden;
-            border-radius: 11px;
-            box-shadow: 0 0 15px rgba(0, 191, 255, 0.8);
+            width: 220px;
+            height: 200px;
+        }
+
+        .pump-card {
+            background: url("http://10.100.10.124:8090/inundation/poi/poi-window-bg.png") no-repeat center / contain;
+            width: 220px;
+            height: 200px;
+            display: flex;
+            flex-direction: column;
         }
 
         /* ===== Header ===== */
+        .header-container {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 6px;
+        }
+
         .header {
-            background: rgba(23, 50, 88, 0.6);
-            backdrop-filter: blur(6px);
-            border-bottom: 1px solid rgba(248, 248, 248, 0.4);
+            background: url("http://10.100.10.124:8090/inundation/poi/poi-window-title-bg.png") no-repeat center / contain;
+            width: 184px;
+            height: 24px;
             color: #ffffff;
-            font-weight: 600;
             padding: 6px 10px;
-            font-size: 14px;
+            font-size: 20px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-
             font-family: "YouSheBiaoTiHei", sans-serif;
+            margin: 6px 10px;
         }
 
         /* ===== Content ===== */
         .content {
-            background: rgba(23, 50, 88, 0.6);
-            backdrop-filter: blur(6px);
-            padding: 9px 10px;
+            font-family: "AlimamaAgileVF", sans-serif;
+            padding: 1px 15px;
             display: flex;
             flex-direction: column;
-            gap: 6px;
+        }
+
+        .content>*+* {
+            margin-top: 5px;
         }
 
         /* ===== Rows ===== */
@@ -74,20 +83,21 @@
             color: rgba(214, 245, 255, 0.85);
             min-width: 60px;
             font-size: 12px;
-            font-family: "YouSheBiaoTiHei", Arial, sans-serif;
         }
 
         .value {
             font-weight: 600;
             color: #ffffff;
             font-size: 12px;
-            font-family: "YouSheBiaoTiHei", sans-serif;
         }
 
         /* ===== Status Dots ===== */
         .status-dots {
             display: flex;
-            gap: 4px;
+        }
+
+        .status-dots>*+* {
+            margin-left: 4px;
         }
 
         .dot {
@@ -116,24 +126,21 @@
         }
 
         /* ===== Button ===== */
-        button {
-            background: linear-gradient(180deg,
-                    rgba(36, 104, 190, 0.4),
-                    rgba(0, 144, 211, 0.8));
-            color: #ffffff;
-            font-weight: 600;
-            font-family: "ALMMAVF", sans-serif;
-            border: 1px solid rgba(214, 245, 255, 0.4);
-            border-radius: 6px;
-            padding: 4px 12px;
-            cursor: pointer;
+        .header-button {
+            background: url("http://10.100.10.124:8090/inundation/poi/poi-window-button-bg.png") no-repeat center / contain;
+            width: 49px;
+            height: 18px;
             font-size: 12px;
-            box-shadow: 0 0 6px rgba(0, 191, 255, 0.6);
+            font-weight: 600;
+            font-family: "AlimamaAgileVF", sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
             transition: all 0.3s ease;
         }
 
-        button:hover {
-            box-shadow: 0 0 12px rgba(0, 191, 255, 1);
+        .header-button:hover {
             transform: scale(1.05);
         }
 
@@ -148,10 +155,51 @@
 </head>
 
 <body>
-    <div class="header">
-        <div>吴家村</div>
-        <div>
-            <button id="btnCurve">曲线</button>
+    <div class="pump-card">
+        <div class="header-container">
+            <div class="header">
+                <div>吴家村</div>
+                <div>
+                    <div class="header-button" id="btnCurve">曲线</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="content">
+            <div class="row">
+                <div class="label">瞬时抽升量：</div>
+                <div class="value">9.7万/日</div>
+            </div>
+
+            <div class="row">
+                <div class="label">运行状态：</div>
+                <div class="status-dots">
+                    <div class="dot green"></div>
+                    <div class="dot red"></div>
+                    <div class="dot red"></div>
+                    <div class="dot green"></div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="label">抽前液位：</div>
+                <div class="value">4.75m</div>
+            </div>
+
+            <div class="row">
+                <div class="label">溢流液位：</div>
+                <div class="value">5.62m</div>
+            </div>
+
+            <div class="row">
+                <div class="label">目前目标液位：</div>
+                <div class="value">3.50m</div>
+            </div>
+
+            <div class="row">
+                <div class="label">跨越状态：</div>
+                <div class="value">无跨越</div>
+            </div>
         </div>
     </div>
 
@@ -167,43 +215,6 @@
             }
         });
     </script>
-
-    <div class="content">
-        <div class="row">
-            <div class="label">瞬时抽升量：</div>
-            <div class="value">9.7万/日</div>
-        </div>
-
-        <div class="row">
-            <div class="label">运行状态：</div>
-            <div class="status-dots">
-                <div class="dot green"></div>
-                <div class="dot red"></div>
-                <div class="dot red"></div>
-                <div class="dot green"></div>
-            </div>
-        </div>
-
-        <div class="row">
-            <div class="label">抽前液位：</div>
-            <div class="value">4.75m</div>
-        </div>
-
-        <div class="row">
-            <div class="label">溢流液位：</div>
-            <div class="value">5.62m</div>
-        </div>
-
-        <div class="row">
-            <div class="label">目前目标液位：</div>
-            <div class="value">3.50m</div>
-        </div>
-
-        <div class="row">
-            <div class="label">跨越状态：</div>
-            <div class="value">无跨越</div>
-        </div>
-    </div>
 </body>
 
 </html>
