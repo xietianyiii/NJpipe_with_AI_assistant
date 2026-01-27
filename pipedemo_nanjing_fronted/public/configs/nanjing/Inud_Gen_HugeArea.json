@@ -1,0 +1,27 @@
+{
+    "algorithmType": "FloodForShp",
+    "customId": "flood_default",
+    "customData": "",
+    "file": {
+        "tifURL": "http://10.100.10.124:8090/inundation/water_point_grid/nanjing/pipe-water-gird-dem-hugeArea.tif",
+        "shpURL": "http://10.100.10.124:8090/inundation/water_point_grid/nanjing/gird_10000_3470.shp",
+        "shxURL": "http://10.100.10.124:8090/inundation/water_point_grid/nanjing/gird_10000_3470.shx",
+        "prjURL": "http://10.100.10.124:8090/inundation/water_point_grid/nanjing/gird_10000_3470.prj",
+        "dbfURL": "http://10.100.10.124:8090/inundation/water_point_grid/nanjing/gird_10000_3470.dbf",
+        "override": true
+    },
+    "data": [
+        {
+            "GridIDUrl": "http://10.100.10.124:8090/inundation/Nanjing/Grid/GridIDArray_001.json",
+            "ValueUrl": "http://10.100.10.124:8090/inundation/Nanjing/Grid/ValueArray_001.json"
+        },
+        {
+            "GridIDUrl": "http://10.100.10.124:8090/inundation/Nanjing/Grid/GridIDArray_002.json",
+            "ValueUrl": "http://10.100.10.124:8090/inundation/Nanjing/Grid/ValueArray_002.json"
+        },
+        {
+            "GridIDUrl": "http://10.100.10.124:8090/inundation/Nanjing/Grid/GridIDArray_003.json",
+            "ValueUrl": "http://10.100.10.124:8090/inundation/Nanjing/Grid/ValueArray_003.json"
+        }
+    ]
+}

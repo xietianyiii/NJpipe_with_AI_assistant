@@ -10,8 +10,9 @@ const inundationCache = {
  * 自动检测配置文件是否变化，若变化则重新创建算法
  * @param App - WDP 实例
  * @param configPath - 淹没配置文件 JSON 地址（支持 HTTP、本地或相对路径）
+ * @param height 
  */
-export async function createAndRunInundation(App: any, configPath: string): Promise<void> {
+export async function createAndRunInundation(App: any, configPath: string, height?: number): Promise<void> {
   if (!App) {
     console.warn("⚠️ App 实例无效，无法创建 inundation");
     return;
@@ -79,7 +80,7 @@ export async function createAndRunInundation(App: any, configPath: string): Prom
 
     // 5️⃣ 运行淹没算法
     const runRes = await inundationAlgo.RunAlgorithm({
-      offset: [0, 0, 6],
+      offset: [0, 0, height],
       scale: [1, 1],
       rotation: 0,
       materialEId: materialObj.eid,

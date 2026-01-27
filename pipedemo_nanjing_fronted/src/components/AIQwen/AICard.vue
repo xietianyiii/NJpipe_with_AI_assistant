@@ -204,7 +204,7 @@ onMounted(() => {});
   background: rgba(23, 50, 88, 0.6);
   border: 1px solid rgba(214, 245, 255, 0.2);
   box-sizing: border-box;
-  border-radius: 12px;
+  border-radius: 20px;
   box-shadow: 0 0 15px rgba(0, 191, 255, 0.8);
   padding: 16px 20px;
   font-size: 14px;

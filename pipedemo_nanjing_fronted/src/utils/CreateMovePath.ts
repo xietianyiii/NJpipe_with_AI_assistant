@@ -49,7 +49,7 @@ export async function createMovePath(
                 speedupFactor: 1,
                 opacity: 1,
                 color,
-                passColor: "c9ff23ff",
+                passColor: "#006400",
             },
             customId: "my-movePath-id",
             bVisible: visible,
@@ -78,13 +78,19 @@ export async function createMovePath(
  * @param coordinates 
  * @param color 
  * @param pathType 
+ * @param width - 路径宽度
+ * @param speedupFactor - 路径加速因子
+ * @param passColor - 路径通过颜色
  * @returns 
  */
 export async function createMultiMovePath(
     App: any,
     coordinates: [number, number, number][],
     color: string = "a54cffff",
-    pathType: "arrow" | "arrow_dot" | "scan_line"| "solid" = "arrow"
+    pathType: string = "arrow",
+    width: number = 20,
+    speedupFactor: number = 1,
+    passColor: string = "c9ff23ff"
 ): Promise<any> {
     if (!App?.Scene) {
         console.error("❌ App 实例无效");
@@ -100,11 +106,11 @@ export async function createMultiMovePath(
             polyline: { coordinates },
             pathStyle: {
                 type: pathType,
-                width: 20,
-                speedupFactor: 1,
+                width: width,
+                speedupFactor: speedupFactor,
                 opacity: 1,
                 color,
-                passColor: "c9ff23ff",
+                passColor: passColor,
             },
             customId,
             bVisible: true,
@@ -515,5 +521,58 @@ export async function assignEidEntity(
     }
 }
 
+export type MovePath = [number, number, number][];
+/**
+ * 批量创建路径（基于 Record<string, MovePath>）
+ * @param App
+ * @param pathsRecord 路径集合（如 WaterZone1PipePaths）
+ * @param options 公共样式参数
+ */
+export async function createMovePathsFromRecord(
+  App: any,
+  pathsRecord: Record<string, MovePath>,
+  options?: {
+    color?: string;
+    pathType?: string;
+    width?: number;
+    speedupFactor?: number;
+    passColor?: string;
+  }
+): Promise<any[]> {
+  const results: any[] = [];
 
+  if (!pathsRecord || Object.keys(pathsRecord).length === 0) {
+    console.warn("⚠️ pathsRecord 为空");
+    return results;
+  }
+
+  for (const [key, coordinates] of Object.entries(pathsRecord)) {
+    if (!coordinates || coordinates.length < 2) {
+      console.warn(`⚠️ ${key} 点数不足，跳过`);
+      continue;
+    }
+
+    console.log(`🛠️ 创建路径：${key}`);
+
+    const path = await createMultiMovePath(
+      App,
+      coordinates,
+      options?.color ?? "a54cffff",
+      options?.pathType ?? "arrow",
+      options?.width ?? 20,
+      options?.speedupFactor ?? 1,
+      options?.passColor ?? "c9ff23ff"
+    );
+
+    if (path) {
+      results.push({
+        key,
+        path,
+      });
+    }
+  }
+
+  console.log(`✅ 批量创建完成，共 ${results.length} 条路径`);
+  return results;
+}
 

@@ -29,6 +29,9 @@
       <LakeMoniCard :visible="lakeMoniVisible" @close="lakeMoniVisible = false"
         @river-level-updated="handleLakeLevelUpdated" />
 
+      <InundationCard v-show="showInudationCard" :visible="showInudationCard" @close="showInudationCard = false"
+        @inundation-execute="handleInundationExecute" @inundation-reset="handleInundationReset" />
+
       <AIQwenCard v-show="showAIQwenCard" :chat="chat" @close="showAIQwenCard = false" />
 
       <PipeAttriInfoCard v-show="showPipeAttriInfo" :PipeFID="PipeAttriFID" :PipeEID="PipeAttriEID"
@@ -42,17 +45,18 @@
         @close="showPipeUploadCard = false" />
 
       <PipeToolBar v-model:show-pipe-upload-card="showPipeUploadCard" v-model:show-AI-qwen-card="showAIQwenCard"
-        @create-pipeline="handleCreatePipeline" @clear-pipeline="handleClearPipeline" @digClicked="handleDigClicked"
-        @digcutClicked="handleDigCutClicked" @resetdigcutClicked="handleResetDigCutClicked"
-        @pipeliftClicked="handlePipeliftClicked" @resetpipeliftClicked="handleResetPipeliftClicked"
-        @pipelightClicked="handlePipelightClicked" @resetpipelightClicked="handleResetPipelightClicked"
-        @liquidlevelClicked="handleLiquidlevelClicked" @resetliquidlevelClicked="handleResetLiquidlevelClicked"
-        @flowdirectionClicked="handleFlowdirectionClicked" @resetflowdirectionClicked="handleResetFlowdirectionClicked"
-        @sceneStyleClicked="handleSceneStyleClicked" @resetSceneStyleClicked="handleResetSceneStyleClicked"
-        @pipevisibilityToggled="handlePipeVisibilityToggled" @pipeLabelToggled="handlePipeLabelToggled"
-        @pipeEditorToggled="handlePipeEditorToggled" @pipSpeEffectClicked="handlePipSpeEffectClicked"
-        @resetSpeEffectClicked="handleResetSpeEffectClicked" @resetPipeUploadClicked="handleResetPipeUploadClicked"
-        @AICardToggled="handleAICardToggled" />
+        v-model:show-Inudation-card="showInudationCard" @create-pipeline="handleCreatePipeline"
+        @clear-pipeline="handleClearPipeline" @digClicked="handleDigClicked" @digcutClicked="handleDigCutClicked"
+        @resetdigcutClicked="handleResetDigCutClicked" @pipeliftClicked="handlePipeliftClicked"
+        @resetpipeliftClicked="handleResetPipeliftClicked" @pipelightClicked="handlePipelightClicked"
+        @resetpipelightClicked="handleResetPipelightClicked" @liquidlevelClicked="handleLiquidlevelClicked"
+        @resetliquidlevelClicked="handleResetLiquidlevelClicked" @flowdirectionClicked="handleFlowdirectionClicked"
+        @resetflowdirectionClicked="handleResetFlowdirectionClicked" @sceneStyleClicked="handleSceneStyleClicked"
+        @resetSceneStyleClicked="handleResetSceneStyleClicked" @pipevisibilityToggled="handlePipeVisibilityToggled"
+        @pipeLabelToggled="handlePipeLabelToggled" @pipeEditorToggled="handlePipeEditorToggled"
+        @pipSpeEffectClicked="handlePipSpeEffectClicked" @resetSpeEffectClicked="handleResetSpeEffectClicked"
+        @resetPipeUploadClicked="handleResetPipeUploadClicked" @AICardToggled="handleAICardToggled"
+        @InudationCardToggled="handleInudationCardToggled" />
 
       <div class="test-btn-container">
         <!-- <div class="camera-input-container">
@@ -67,9 +71,46 @@
         <button class="control-btn" @click="handleUpdateCamera">
           <span>更新相机</span>
         </button>  -->
-        <button class="control-btn" @click="handleGetCameraInfo">
+        <!-- <button class="control-btn" @click="handleGetCameraInfo">
           <span>获取相机信息</span>
         </button>
+        <div class="path-builder">
+          <button @click="temstartPick">开始取点</button>
+          <button @click="temendPick">绘制路径</button>
+
+          <label>
+            颜色：
+            <input type="color" v-model="temcolor" />
+          </label>
+
+          <label>
+            样式：
+            <select v-model="temstyle">
+              <option v-for="item in temstyles" :key="item" :value="item">
+                {{ item }}
+              </option>
+            </select>
+          </label>
+
+          <label>
+            宽度：
+            <input type="number" v-model.number="temwidth" min="1" max="2000" step="1" />
+          </label>
+
+          <label>
+            路过颜色：
+            <input type="color" v-model="tempasscolor" />
+          </label>
+
+          <label>
+            速度：
+            <input type="number" v-model.number="temspeed" min="0" max="1" step="0.1" />
+          </label>
+
+          <button @click="temexportPath">导出路径</button>
+          <button @click="temclearPath">删除路径</button>
+        </div> -->
+
       </div>
     </div>
   </div>
@@ -89,6 +130,7 @@ import {
 import { useRoute } from "vue-router";
 import WdpApi from "wdpapi";
 import WimApi from "@wdp-api/wim-api";
+import { FloodPumpCarMovePaths, WaterZone1PipePaths, WaterZone2PipePaths, WaterZone3PipePaths, WaterZone4PipePaths } from "@/configs/Path/movePath";
 import { InundationGenerator } from "@/utils/Inund_Gen";
 import { createPois } from "@/utils/createPois";
 import { handleDeleteAllPois } from "@/utils/deletePois";
@@ -115,6 +157,7 @@ import {
   startVehicleMove,
   assignEidEntity,
   createEntityMovePath,
+  createMovePathsFromRecord,
 } from "@/utils/CreateMovePath";
 import {
   startPickPoint,
@@ -166,6 +209,88 @@ import Header from "@/components/Header";
 import Menu from "@/components/Menu";
 import { setStationVisibility } from "@/utils/SetStationVisibility";
 
+const temstyles = ref(["arrow",
+  "round_pipe",
+  "square_pipe",
+  "railway",
+  "brimless_arrow",
+  "dashed_line",
+  "arrow_dot",
+  "arrow_dashed",
+  "dashed_dot",
+  "flash",
+  "scan_line",]);
+const temstyle = ref(temstyles.value[8]);
+
+const temcolor = ref("#0000FF");
+const tempasscolor = ref("#0000FF");
+const tempickedPoints = ref<Record<string, [number, number, number][]>>({});
+const tempathIndex = ref(0);
+const temwidth = ref(500);
+const temspeed = ref(0.5);
+
+async function temstartPick() {
+  await startPickPoint(App, false, true, "surface");
+}
+async function temclearPath() {
+  await deleteAllMovePaths(App);
+  tempickedPoints.value = {};
+  tempathIndex.value = 0;
+}
+
+async function temendPick() {
+  const coordinates = await getPickedPoints(App, "surface");
+  if (coordinates.length > 0) {
+    console.log("📍 用户取到的点坐标：", coordinates);
+  }
+
+  if (!coordinates || coordinates.length < 2) {
+    console.warn("至少需要两个点才能生成路径");
+    return;
+  }
+  const pathKey = `path${tempathIndex.value}`;
+  // ✅ 存入多路径容器
+  tempickedPoints.value[pathKey] = coordinates;
+
+  console.log(`📍 保存 ${pathKey}:`, coordinates);
+
+  await createMultiMovePath(
+    App,
+    coordinates,
+    temcolor.value,
+    temstyle.value,
+    temwidth.value,
+    temspeed.value,
+    tempasscolor.value,
+  );
+
+  tempathIndex.value++;
+
+  await endPickPoint(App);
+}
+
+const temexportPath = () => {
+  const entries = Object.entries(tempickedPoints.value);
+
+  if (entries.length === 0) return;
+
+  const blocks = entries.map(([key, points]) => {
+    const body = points
+      .map(([x, y, z]) => `[${x}, ${y}, ${z}]`)
+      .join(",\n    ");
+
+    return `${key}: [
+    ${body}
+  ]`;
+  });
+
+  const code = `const movePaths = {
+  ${blocks.join(",\n\n  ")}
+};`;
+
+  console.log("📦 复制以下路径代码：\n" + code);
+};
+
 const LegendCard = defineAsyncComponent(
   () => import("@/components/Twin/legend-card.vue")
 );
@@ -174,6 +299,9 @@ const InuClickInfoCard = defineAsyncComponent(
 );
 const LakeMoniCard = defineAsyncComponent(
   () => import("@/components/Twin/LakeMoniCard.vue")
+);
+const InundationCard = defineAsyncComponent(
+  () => import("@/components/Twin/InundationCard.vue")
 );
 const PipeAttriInfoCard = defineAsyncComponent(
   () => import("@/components/Twin/PipeClickInfo-card.vue")
@@ -198,6 +326,7 @@ const showPipeAttriInfo = ref(false);
 const showPipeProblemCard = ref(false);
 const showPipeUploadCard = ref(false);
 const showAIQwenCard = ref(false);
+const showInudationCard = ref(false);
 const lakeMoniVisible = ref(false);
 
 const pipeUploadStepActive = ref(0);
@@ -304,6 +433,10 @@ function handlePipeUploadClicked() {
 
 function handleAICardToggled(visible: boolean) {
   showAIQwenCard.value = visible;
+}
+
+function handleInudationCardToggled(visible: boolean) {
+  showInudationCard.value = visible;
 }
 
 onMounted(() => {
@@ -1002,7 +1135,8 @@ async function handlePipSpeEffectClicked() {
 
   await createAndRunInundation(
     App,
-    "http://10.100.10.124:8090/inundation/water_point_grid/nanjing/Inud_Gen_pipe-overflow.json"
+    "http://10.100.10.124:8090/inundation/water_point_grid/nanjing/Inud_Gen_pipe-overflow.json",
+    11
   );
 
   // const location: [number, number, number] = [
@@ -1142,6 +1276,49 @@ async function handleResetSceneStyleClicked() {
   await App.Environment.SetSceneWeather("Sunny");
 }
 
+async function handleInundationExecute(data: {
+  moniType: string
+  moniScheme: string
+  material: string
+}) {
+  console.log("📩 收到淹没监测按钮点击事件", data)
+
+  const { moniType, moniScheme, material } = data
+
+  // 只处理内涝模拟
+  if (moniType !== '内涝模拟') {
+    console.warn('⚠️ 当前不是内涝模拟，忽略执行')
+    return
+  }
+
+  // 内涝 + 大范围
+  if (moniScheme === 'area') {
+    if (material === 'water') {
+      await createAndRunInundation(
+        App,
+        "http://10.100.10.124:8090/inundation/water_point_grid/nanjing/Inud_Gen_HugeArea.json",
+        500
+      )
+      return
+    }
+
+    if (material === 'heatmap') {
+      await createAndRunHeatmap(
+        App,
+        "http://10.100.10.124:8090/inundation/water_point_grid/nanjing/Inud_Gen_HugeArea.json",
+      )
+      return
+    }
+  }
+  console.warn('⚠️ 未匹配到可执行的内涝方案', data)
+}
+
+
+async function handleInundationReset() {
+  console.log("📩 收到淹没监测重置按钮点击事件");
+  await deleteInundationAlgorithm();
+}
+
 async function handleCreatePumpPoi() {
   const position: [number, number, number] = [
     118.85075058795135, 32.025794180655396, 4152.196569062987
@@ -1277,6 +1454,56 @@ async function handleOpenWaterZone() {
   showLegendCard.value = false;
 
   setTimeout(() => fixWdpInputBug(), 500);
+
+
+  await createMovePathsFromRecord(
+    App,
+    WaterZone1PipePaths,
+    {
+      color: "#FFE4B5",
+      pathType: "scan_line",
+      width: 200,
+      speedupFactor: 0.1,
+      passColor: "#00BFFF",
+    }
+  );
+
+  await createMovePathsFromRecord(
+    App,
+    WaterZone2PipePaths,
+    {
+      color: "#87CEFA",
+      pathType: "scan_line",
+      width: 200,
+      speedupFactor: 0.1,
+      passColor: "#00BFFF",
+    }
+  );
+
+  await createMovePathsFromRecord(
+    App,
+    WaterZone3PipePaths,
+    {
+      color: "#1E90FF",
+      pathType: "scan_line",
+      width: 200,
+      speedupFactor: 0.1,
+      passColor: "#00BFFF",
+    }
+  );
+
+  await createMovePathsFromRecord(
+    App,
+    WaterZone4PipePaths,
+    {
+      color: "#FF7F50",
+      pathType: "scan_line",
+      width: 200,
+      speedupFactor: 0.1,
+      passColor: "#00BFFF",
+    }
+  );
+
 }
 
 async function handleCloseWaterZone() {
@@ -1290,6 +1517,8 @@ async function handleCloseWaterZone() {
   } catch (err) {
     console.error("❌ 删除 SHP 区域失败:", err);
   }
+
+  await deleteAllMovePaths(App);
 }
 
 async function handleOpenStrucDefect() {
@@ -1309,7 +1538,7 @@ async function handleOpenStrucDefect() {
   // await setPipeNodeVisible(App, false, "rain_node", ["HNT"]);
 
   // const fids1 = ["53393b07", "b50f7eb7", "b50f7eb8", "b50f7eb6", "b50f7eb5"];
-  const fids1 = ["bfa19a5b","053dfcd1","c34e375f"];
+  const fids1 = ["bfa19a5b", "053dfcd1", "c34e375f"];
   await setPipelineHighlight(
     App,
     true,
@@ -1321,7 +1550,7 @@ async function handleOpenStrucDefect() {
   );
 
   // const fids2 = ["1694edc3", "a82f50b5"];
-  const fids2 = ["1505ddc2","3ee4bbea","c78ace05"];
+  const fids2 = ["1505ddc2", "3ee4bbea", "c78ace05"];
   await setPipelineHighlight(
     App,
     true,
@@ -1333,7 +1562,7 @@ async function handleOpenStrucDefect() {
   );
 
   // const fids4 = ["b87625c6", "3084886c"];
-  const fids4 = ["dfec7a4f","27c096d7"];
+  const fids4 = ["dfec7a4f", "27c096d7"];
   await setPipelineHighlight(
     App,
     true,
@@ -1345,7 +1574,7 @@ async function handleOpenStrucDefect() {
   );
 
   // const fids5 = ["c8c92f4e"]; 黄色
-  const fids5 = ["f08e5df5","bf3da646","c5ae61b7"];
+  const fids5 = ["f08e5df5", "bf3da646", "c5ae61b7"];
   await setPipelineHighlight(
     App,
     true,
@@ -1634,6 +1863,8 @@ async function handleCreateWaterlogPoi() {
   showLegendCard.value = true;
 
   setTimeout(() => fixWdpInputBug(), 500);
+
+
 }
 
 async function handleDeleteWaterlogPoi() {
@@ -1655,9 +1886,9 @@ async function handleWaterlogClick(index: number) {
 
 async function handleOpenPumpCar() {
   const position: [number, number, number] = [
-    118.77859806083113, 32.060740672618806, 1693.0951294919687
+    118.78212673256611, 32.07360501510054, 12944.56967247115
   ];
-  const rotation = { pitch: -88.99999237060547, yaw: -175.39414978027344 };
+  const rotation = { pitch: -88.99999237060547, yaw: -179.94093322753906 };
   await updateCamera(App, position, rotation, 2);
 
   await createAndRunInundation(
@@ -1682,10 +1913,10 @@ async function handleOpenPumpCar() {
   });
 
   const coords: [number, number, number?][] = [
-    [118.78170352891638, 32.05949452262926, 0],
-    [118.778328035914, 32.056698525507, 0],
-    [118.77403654761338, 32.065729438418444, 0],
-    [118.77456828848922, 32.060763395514954, 0],
+    [118.7910777155568, 32.05912317247263, 0],
+    [118.77862249782888, 32.03138232207008, 0],
+    [118.75051321332089, 32.06456591665459, 0],
+    [118.75818955275446, 32.091178823033204, 0],
     [118.77880150743988, 32.06069156440686, 0],
   ];
 
@@ -1746,53 +1977,26 @@ async function handleClosePumpCar() {
   isVehicleCar = false;
 }
 
-const path0: [number, number, number][] = [
-  [118.78170352891638, 32.05949452262926, 0],
-  [118.78173703695394, 32.060192974482604, 0],
-  [118.7792007199177, 32.06044536162779, 0],
-];
-
-const path1: [number, number, number][] = [
-  [118.778328035914, 32.056698525507, 0],
-  [118.77872400821985, 32.05669951233039, 0],
-  [118.7787313135169, 32.06009519170839, 0],
-];
-
-const path2: [number, number, number][] = [
-  [118.77403654761338, 32.065729438418444, 0],
-  [118.77364660023713, 32.06536319284201, 0],
-  [118.77837489957544, 32.061137849248375, 0],
-];
-
-const path3: [number, number, number][] = [
-  [118.77456828848922, 32.060763395514954, 0],
-  [118.77455941871568, 32.06098724856572, 0],
-  [118.77619213099437, 32.06105039088655, 0],
-  [118.77650319498248, 32.06123142904475, 0],
-  [118.7768734724749, 32.06116225987023, 0],
-  [118.77744245532261, 32.060636239017356, 0],
-  [118.77822872257916, 32.0605566442982, 0],
-];
-
 async function handleOpenDispatchPlan() {
   const position: [number, number, number] = [
-    118.77870836531307, 32.06073583764196, 1402.9525314057016
+    118.78146131209282, 32.07055385176709, 10014.844332762055
   ];
-  const rotation = { pitch: -88.99999237060547, yaw: -175.39414978027344 };
+  const rotation = { pitch: -88.99999237060547, yaw: -179.94093322753906 };
   await updateCamera(App, position, rotation, 2);
 
   const position0: [number, number, number] = [
     118.77880150743988, 32.06069156440686, 0
   ];
-  await createCircleRange(App, position0, 500, true);
+  // await createCircleRange(App, position0, 500, true);
+  await createCircleRange(App, position0, 4000, true);
 
-  await createMultiMovePath(App, path0, "#32CD32", "solid");
-  await createMultiMovePath(App, path1, "#00FFFF", "solid");
-  await createMultiMovePath(App, path2, "#00FFFF", "solid");
-  await createMultiMovePath(App, path3, "#00FFFF", "solid");
+  await createMultiMovePath(App, FloodPumpCarMovePaths["path0"]!, "#00FFFF", "solid");
+  await createMultiMovePath(App, FloodPumpCarMovePaths["path1"]!, "#32CD32", "solid");
+  await createMultiMovePath(App, FloodPumpCarMovePaths["path2"]!, "#32CD32", "solid");
+  await createMultiMovePath(App, FloodPumpCarMovePaths["path3"]!, "#32CD32", "solid");
 
-  if (path0.length > 0 && path0[0]) {
-    await createMoveVehicle(App, path0[0]);
+  if (FloodPumpCarMovePaths["path0"]!.length > 0 && FloodPumpCarMovePaths["path0"]![0]) {
+    await createMoveVehicle(App, FloodPumpCarMovePaths["path0"]![0]);
   }
 }
 
@@ -1806,18 +2010,18 @@ async function handleCloseDispatchPlan() {
 
 async function handleOpenDispatchExecute() {
   const position: [number, number, number] = [
-    118.78045921172324, 32.06041772336888, 720.3799087532078
+    118.78494465840367, 32.06180532249867, 1659.0181234413385
   ];
-  const rotation = { pitch: -85.28776550292969, yaw: -175.73117065429688 };
+  const rotation = { pitch: -88.99999237060547, yaw: -179.94093322753906 };
   await updateCamera(App, position, rotation, 2);
 
   await deleteAllMovePaths(App);
 
   vehicleDirection = "forward";
   isVehicleCar = true;
-  await createMovePath(App, path0, "#32CD32", "scan_line");
-  if (path0.length > 0 && path0[0]) {
-    await createMoveVehicle(App, path0[0]);
+  await createMovePath(App, FloodPumpCarMovePaths["path0"]!, "#00FFFF", "solid");
+  if (FloodPumpCarMovePaths["path0"]!.length > 0 && FloodPumpCarMovePaths["path0"]![0]) {
+    await createMoveVehicle(App, FloodPumpCarMovePaths["path0"]![0]);
   }
   await startVehicleMove(App, undefined, undefined, 2.5, false, "play");
 }
@@ -1825,9 +2029,9 @@ async function handleOpenDispatchExecute() {
 async function onArriveWaterPoint() {
   console.log("🚗💨 到达水体点");
   setTimeout(async () => {
-    await createMovePath(App, path0, "#32CD32", "scan_line");
-    if (path0.length > 0 && path0[0]) {
-      await createMoveVehicle(App, path0[0]);
+    await createMovePath(App, FloodPumpCarMovePaths["path0"]!, "#00FFFF", "solid");
+    if (FloodPumpCarMovePaths["path0"]!.length > 0 && FloodPumpCarMovePaths["path0"]![0]) {
+      await createMoveVehicle(App, FloodPumpCarMovePaths["path0"]![0]);
     }
     await startVehicleMove(App, undefined, undefined, 2.5, true, "play");
   }, 1200);

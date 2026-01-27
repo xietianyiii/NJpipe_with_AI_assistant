@@ -2,26 +2,25 @@
   <div v-show="visible" class="draggable-card" :style="{ top: position.y + 'px', left: position.x + 'px' }"
     @mousedown="startDrag" ref="cardRef">
     <div class="card-header">
-      <span class="card-header-text">湖泊监测 </span>
+      <span class="card-header-text">淹没卡片 </span>
       <button class="close-btn" @click="$emit('close')">✕</button>
     </div>
 
     <div class="card-body">
       <div class="river-level-row">
-        <label class="river-level-label">当前湖泊水位值：</label>
-        <span class="river-level-value">{{ displayedRiverLevel }}</span>
+        <label class="river-level-label">模拟类型：</label>
+        <BaseSelect v-model="MoniType" :options="MoniTypeOptions" placeholder="请选择模拟类型" />
       </div>
 
       <!-- 第二行：修改湖泊水位 -->
-      <div class="river-level-modify-row">
-        <label class="river-level-modify-label">修改湖泊水位：</label>
-        <BaseNumberInput v-model="riverLevel" :min="5" :max="12" :step="1" width="80px" class="river-level-input" />
-
+      <div class="river-level-row">
+        <label class="river-level-modify-label">模拟方案：</label>
+        <BaseSelect v-model="MoniScheme" :options="MoniSchemeOptions" placeholder="请选择模拟方案" />
       </div>
 
       <!-- 第三行：操作按钮 -->
       <div class="button-row">
-        <el-button type="primary" size="small" @click="updateRiverLevel" class="action-button">
+        <el-button type="primary" size="small" @click="inundationExecute" class="action-button">
           <svg t="1760585811887" class="icon dispatch-icon" viewBox="0 0 1024 1024" version="1.1"
             xmlns="http://www.w3.org/2000/svg" p-id="95794" width="30" height="30">
             <path
@@ -32,7 +31,7 @@
               fill="#ffffff" p-id="95796"></path>
           </svg>
         </el-button>
-        <el-button type="warning" size="small" @click="resetRiverLevel" class="action-button">
+        <el-button type="warning" size="small" @click="inundationReset" class="action-button">
           <svg t="1763461177116" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg"
             p-id="27116" width="15" height="15">
             <path
@@ -40,6 +39,15 @@
               fill="#ffffff" p-id="27117"></path>
           </svg>
         </el-button>
+
+        <div class="material-button" :class="{ disabled: !isInundationMode }">
+          <button class="material-btn button1" :class="{ active: activeMaterial === 'water' }"
+            @click="selectMaterial('water')"> 水体</button>
+
+          <button class="material-btn button2" :class="{ active: activeMaterial === 'heatmap' }"
+            @click="selectMaterial('heatmap')"> 热力</button>
+        </div>
+
       </div>
     </div>
   </div>
@@ -49,19 +57,93 @@
 import {
   ref,
   watch,
-  onBeforeUnmount
+  onBeforeUnmount,
+  computed
 } from "vue";
 
-import BaseNumberInput from "@/components/ReuseCop/BaseNumInput.vue";
+import BaseSelect from "@/components/ReuseCop/BaseSelect-long.vue";
 
-const displayedRiverLevel = ref(5.0); // 显示的水位值，默认为0+1=1
-const riverLevel = ref(5.0); // 输入框的值
+type SchemeOption = {
+  label: string
+  value: string
+}
+
+type MoniConfig = {
+  schemes: SchemeOption[]
+}
+const isInundationMode = computed(() => MoniType.value === '内涝模拟')
+
+const MONI_CONFIG_MAP: Record<string, MoniConfig> = {
+  内涝模拟: {
+    schemes: [
+      { label: "大范围", value: "area" },
+      { label: "积水点", value: "point" },
+    ],
+  },
+
+  管道模拟: {
+    schemes: [
+      { label: "默认", value: "default" },
+    ],
+  },
+}
+
+const MoniType = ref("内涝模拟");
+const MoniScheme = ref("");
+
+const MoniTypeOptions = [
+  { label: "内涝模拟", value: "内涝模拟" },
+  { label: "管道模拟", value: "管道模拟" },
+];
+
+const MoniSchemeOptions = computed(() => {
+  return MONI_CONFIG_MAP[MoniType.value]?.schemes ?? []
+})
+
+watch(MoniType, () => {
+  MoniScheme.value = ""
+})
+
+// 'water' | 'heatmap' 
+type MaterialType = 'water' | 'heatmap'
+
+// 默认激活 water（你可以改）
+const activeMaterial = ref<MaterialType>('water')
+
+function selectMaterial(type: MaterialType) {
+  activeMaterial.value = type
+}
 
 const props = defineProps<{
   visible: boolean
 }>()
 
-const emit = defineEmits(["close", "river-level-updated"]);
+type InundationExecutePayload = {
+  moniType: string
+  moniScheme: string
+  material: MaterialType
+}
+
+const emit = defineEmits<{
+  (e: "close"): void
+  (e: "inundation-execute", payload: InundationExecutePayload): void
+  (e: "inundation-reset"): void
+}>()
+
+
+const inundationExecute = () => {
+  emit("inundation-execute", {
+    moniType: MoniType.value,
+    moniScheme: MoniScheme.value,
+    material: activeMaterial.value
+  })
+};
+
+// 河道监测重置方法
+const inundationReset = () => {
+  console.log("重置淹没");
+  emit("inundation-reset"), {moniType: MoniType.value,};
+};
 
 const position = ref({ x: 1200, y: 470 });
 const isDragging = ref(false);
@@ -199,25 +281,6 @@ watch(
   }
 );
 
-
-// 河道监测执行方法
-const updateRiverLevel = () => {
-  // 更新显示的水位值
-  const v = Number(riverLevel.value) || 0;
-  displayedRiverLevel.value = v;
-  console.log("执行河道监测，当前水位值:", displayedRiverLevel.value);
-  // 触发一个事件通知父组件水位已更新
-  emit("river-level-updated", riverLevel.value);
-};
-
-// 河道监测重置方法
-const resetRiverLevel = () => {
-  console.log("重置河道监测");
-  riverLevel.value = 5.0;
-  displayedRiverLevel.value = 5.0;
-  emit("river-level-updated", riverLevel.value);
-};
-
 onBeforeUnmount(() => {
   document.removeEventListener("mousemove", onDrag);
   document.removeEventListener("mouseup", stopDrag);
@@ -228,10 +291,10 @@ onBeforeUnmount(() => {
 <style scoped>
 .draggable-card {
   position: absolute;
-  width: 300px;
-  background: url('@/assets/pngs/BG/legend/bg.png') no-repeat center/ 100% 100%;
+  width: 290px;
+  background: url('@/assets/pngs/BG/InuCard/bg.png') no-repeat center/ 100% 100%;
   box-sizing: border-box;
-  border-radius: 15px;
+  border-radius: 16px;
   padding: 16px 20px;
   font-size: 14px;
   z-index: 999;
@@ -244,7 +307,7 @@ onBeforeUnmount(() => {
 }
 
 .draggable-card:hover {
-  box-shadow: 0 1px 10px rgba(0, 191, 255, 1);
+  box-shadow: 0 1px 1px rgba(0, 191, 255, 0.5);
 }
 
 .draggable-card:active {
@@ -274,7 +337,6 @@ onBeforeUnmount(() => {
   font-family: "ALMMAVF";
   margin-bottom: 10px;
   padding-bottom: 8px;
-  border-bottom: 1px solid rgba(248, 248, 248, 0.5);
   margin-bottom: 15px;
 }
 
@@ -355,11 +417,54 @@ onBeforeUnmount(() => {
       #1a918b 0%,
       #0099c8 60%,
       #00e5ff 100%);
-  box-shadow: 0 0 10px rgba(0, 255, 255, 1);
+  box-shadow: 0 0 5px rgba(0, 255, 255, 0.6);
 }
 
 .button-row {
   display: flex;
   gap: 10px;
+}
+
+.river-level-row {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+:deep(.base-select) {
+  width: 150px;
+}
+
+:deep(.base-select .dropdown) {
+  bottom: auto !important;
+  top: calc(100% + 6px);
+}
+
+.material-button {
+  width: 100px;
+  height: 24px;
+  background: url('@/assets/pngs/BG/InuCard/btn-bg.png') no-repeat center/ 100% 100%;
+  box-sizing: border-box;
+  display: flex;
+}
+
+.material-button.disabled {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+.material-btn {
+  flex: 1;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: #ffffff;
+  font-family: "ALMMAVF";
+  font-size: 12px;
+}
+
+.material-btn.active {
+  background: url('@/assets/pngs/BG/InuCard/btn-hover.png') no-repeat center/ 100% 100%;
+  box-sizing: border-box;
 }
 </style>

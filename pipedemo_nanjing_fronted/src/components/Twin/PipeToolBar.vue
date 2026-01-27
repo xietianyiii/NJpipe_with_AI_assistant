@@ -208,8 +208,23 @@
       </div>
 
       <!-- 图标11 -->
+      <div class="icon-container" :class="{ 'icon-container-expanded': isInudationCardVisible }">
+        <div class="icon-wrapper" :class="{ active: isInudationCardVisible }" @click="() => handleToolClick(10)">
+          <div class="icon" style="display: flex; align-items: center; justify-content: center">
+            <img src="@/assets/pngs/pipetoolbar/13.png" style="width: 20px; height: 20px" />
+          </div>
+        </div>
+        <div v-if="isInudationCardVisible" class="icon-extension">
+          <div class="extension-content">
+            <span class="extension-title-no-click">淹没模拟</span>
+            <div class="extension-divider"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 图标12 -->
       <div class="icon-container" :class="{ 'icon-container-expanded': isAICardVisible }">
-        <div class="icon-wrapper" :class="{ active: isAICardVisible }" @click="() => handleToolClick(10)">
+        <div class="icon-wrapper" :class="{ active: isAICardVisible }" @click="() => handleToolClick(11)">
           <div class="icon" style="display: flex; align-items: center; justify-content: center">
             <img src="@/assets/pngs/pipetoolbar/12.png" style="width: 26px; height: 26px" />
           </div>
@@ -553,6 +568,7 @@ const isVisibilityToolActive = ref(false); // 单独跟踪显示/隐藏图标的
 const props = defineProps({
   showPipeUploadCard: { type: Boolean, default: false },
   showAIQwenCard: { type: Boolean, default: false },
+  showInudationCard: { type: Boolean, default: false },
 });
 
 const showPipeUploadCardExpand = ref(false);
@@ -609,6 +625,7 @@ const emit = defineEmits<{
   (e: "update:isDraCard4CloseButtonVisible", value: boolean): void;
   (e: "update:showPipeUploadCard", value: boolean): void;
   (e: "update:showAIQwenCard", value: boolean): void;  // Add this line for v-model
+  (e: "update:showInudationCard", value: boolean): void;  // Add this line for v-model
   (e: "create-poi"): void;
   (e: "delete-poi"): void;
   (e: "create-shp-area"): void;
@@ -651,6 +668,7 @@ const emit = defineEmits<{
   (e: "pipeLabelToggled", visible: boolean): void;
   (e: "pipeEditorToggled", enabled: boolean): void;
   (e: "AICardToggled", visible: boolean): void;
+  (e: "InudationCardToggled", visible: boolean): void;
 }>();
 
 const handleDigCut = () => {
@@ -794,6 +812,17 @@ const handleToolClick = (index: number) => {
     activeToolIndex.value = null;
     isPipeEditorExpand.value = false;
     isPipeLabelexpand.value = false;
+    isInudationCardVisible.value = !isInudationCardVisible.value;
+
+    emit("InudationCardToggled", isInudationCardVisible.value);
+    emit("update:showInudationCard", isInudationCardVisible.value); // Add this line for v-model
+    return;
+  }
+
+  if (index === 11) {
+    activeToolIndex.value = null;
+    isPipeEditorExpand.value = false;
+    isPipeLabelexpand.value = false;
     isAICardVisible.value = !isAICardVisible.value;
 
     emit("AICardToggled", isAICardVisible.value);
@@ -868,10 +897,15 @@ const isPipeEditorEnable = ref<boolean>(false);
 const isPipeEditorExpand = ref<boolean>(false);
 
 const isAICardVisible = ref<boolean>(false);
-
+const isInudationCardVisible = ref<boolean>(false);
+  
 // Sync with parent component's showAIQwenCard state
 watch(() => props.showAIQwenCard, (newVal) => {
   isAICardVisible.value = newVal;
+});
+
+watch(() => props.showInudationCard, (newVal) => {
+  isInudationCardVisible.value = newVal;
 });
 
 onMounted(() => {
@@ -916,7 +950,7 @@ onMounted(() => {
 .pipe-toolbar {
   position: fixed;
   top: 94%;
-  left: 27%;
+  left: 25%;
   /* 你想固定左侧位置 */
   transform: translateY(-50%);
   display: flex;
