@@ -32,6 +32,10 @@
       <InundationCard v-show="showInudationCard" :visible="showInudationCard" @close="showInudationCard = false"
         @inundation-execute="handleInundationExecute" @inundation-reset="handleInundationReset" />
 
+      <InuClickInfoCard :visible="showInfo" :title="clickedGridID" :Inuvalue="currentInuValue"
+        :historyValues="historyData" @close="showInfo = false">
+      </InuClickInfoCard>
+
       <AIQwenCard v-show="showAIQwenCard" :chat="chat" @close="showAIQwenCard = false" />
 
       <PipeAttriInfoCard v-show="showPipeAttriInfo" :PipeFID="PipeAttriFID" :PipeEID="PipeAttriEID"
@@ -73,9 +77,9 @@
         </button>  -->
         <!-- <button class="control-btn" @click="handleGetCameraInfo">
           <span>获取相机信息</span>
-        </button>
+        </button> -->
         <div class="path-builder">
-          <button @click="temstartPick">开始取点</button>
+          <!-- <button @click="temstartPick">开始取点</button>
           <button @click="temendPick">绘制路径</button>
 
           <label>
@@ -90,14 +94,14 @@
                 {{ item }}
               </option>
             </select>
-          </label>
+          </label> -->
 
-          <label>
+          <!-- <label>
             宽度：
             <input type="number" v-model.number="temwidth" min="1" max="2000" step="1" />
-          </label>
+          </label> -->
 
-          <label>
+          <!-- <label>
             路过颜色：
             <input type="color" v-model="tempasscolor" />
           </label>
@@ -108,8 +112,8 @@
           </label>
 
           <button @click="temexportPath">导出路径</button>
-          <button @click="temclearPath">删除路径</button>
-        </div> -->
+          <button @click="temclearPath">删除路径</button> -->
+        </div>
 
       </div>
     </div>
@@ -442,7 +446,7 @@ function handleInudationCardToggled(visible: boolean) {
 onMounted(() => {
   App = new WdpApi({
     id: "player",
-    order: "a529dd85ad18c0a329b55a8b7c0886d8",
+    order: "50521d49202684083a92ea36f5efac41",
     url: "https://dtp-api.51aes.com",
     // resolution: [3824, 1924],
     debugMode: "normal",
@@ -1139,6 +1143,22 @@ async function handlePipSpeEffectClicked() {
     11
   );
 
+  await enableInundationInteract(App, true, true);
+  await registerFloodClickCallback(App, (res) => {
+    const info = extractFloodClickInfo(res);
+    if (!info) return;
+
+    console.log("🎯 点击网格 ID:", info.gridID);
+    console.log("📏 当前水深:", info.value);
+    console.log("📈 历史水深数组:", info.history);
+
+    // 更新InuClickInfoCard组件的数据
+    clickedGridID.value = info.gridID.toString();
+    currentInuValue.value = info.value;
+    historyData.value = info.history;
+    showInfo.value = true;
+  });
+
   // const location: [number, number, number] = [
   //   118.77859792288065, 32.040020624823136, 0,
   // ];
@@ -1285,7 +1305,29 @@ async function handleInundationExecute(data: {
 
   const { moniType, moniScheme, material } = data
 
-  // 只处理内涝模拟
+  if (moniType === '管道模拟') {
+    console.log("📩 收到管网流量监测按钮点击事件");
+    const position: [number, number, number] = [
+      118.77919005457976, 32.04765175885222, 31.797795526379925
+    ];
+    const rotation = { pitch: -12.15009593963623, yaw: -133.59109497070312 };
+    await updateCamera(App, position, rotation, 2);
+
+    isLiquidLevelSet.value = true;
+    await handlePipeLabelToggled(true);
+    await setPipelineVisible(App, false, "rain_line", ["SN", "SL", "ZT"]);
+    await setPipeNodeVisible(App, false, "rain_node", ["HNT"]);
+    await setPipeLiquidLevel(App, 0.8, "#00BFFF", "rain_line");
+    await setPipeLiquidLevel(App, 0.8, "#00BFFF", "sewage_line");
+    await setPipeNodeLiquidLevel(App, 0.8, "#00BFFF", "rain_node");
+    await setPipeNodeLiquidLevel(App, 1.0, "#00BFFF", "sewage_node");
+    await setSceneOpacity(App, "水系", 0);
+    await setSceneOpacity(App, "建筑", 0);
+    await setSceneOpacity(App, "地形", 0);
+    await setSceneOpacity(App, "道路", 0);
+    return
+  }
+
   if (moniType !== '内涝模拟') {
     console.warn('⚠️ 当前不是内涝模拟，忽略执行')
     return
@@ -1294,19 +1336,61 @@ async function handleInundationExecute(data: {
   // 内涝 + 大范围
   if (moniScheme === 'area') {
     if (material === 'water') {
+      const position: [number, number, number] = [
+        118.78420101150327, 32.038812193756044, 1631.7945815634464
+      ];
+      const rotation = { pitch: -82.83757781982422, yaw: -177.7146453857422 };
+      await updateCamera(App, position, rotation, 2);
+
       await createAndRunInundation(
         App,
-        "http://10.100.10.124:8090/inundation/water_point_grid/nanjing/Inud_Gen_HugeArea.json",
-        500
+        "http://10.100.10.124:8090/inundation/water_point_grid/nanjing/Inud_Gen_Grid-1968.json",
+        4
       )
+      await enableInundationInteract(App, true, true);
+      await registerFloodClickCallback(App, (res) => {
+        const info = extractFloodClickInfo(res);
+        if (!info) return;
+
+        console.log("🎯 点击网格 ID:", info.gridID);
+        console.log("📏 当前水深:", info.value);
+        console.log("📈 历史水深数组:", info.history);
+
+        // 更新InuClickInfoCard组件的数据
+        clickedGridID.value = info.gridID.toString();
+        currentInuValue.value = info.value;
+        historyData.value = info.history;
+        showInfo.value = true;
+      });
       return
     }
 
     if (material === 'heatmap') {
+      const position: [number, number, number] = [
+        118.78420101150327, 32.038812193756044, 1631.7945815634464
+      ];
+      const rotation = { pitch: -82.83757781982422, yaw: -177.7146453857422 };
+      await updateCamera(App, position, rotation, 2);
+
       await createAndRunHeatmap(
         App,
-        "http://10.100.10.124:8090/inundation/water_point_grid/nanjing/Inud_Gen_HugeArea.json",
+        "http://10.100.10.124:8090/inundation/water_point_grid/nanjing/Inud_Gen_Grid-306.json",
       )
+      await enableInundationInteract(App, true, true);
+      await registerFloodClickCallback(App, (res) => {
+        const info = extractFloodClickInfo(res);
+        if (!info) return;
+
+        console.log("🎯 点击网格 ID:", info.gridID);
+        console.log("📏 当前水深:", info.value);
+        console.log("📈 历史水深数组:", info.history);
+
+        // 更新InuClickInfoCard组件的数据
+        clickedGridID.value = info.gridID.toString();
+        currentInuValue.value = info.value;
+        historyData.value = info.history;
+        showInfo.value = true;
+      });
       return
     }
   }
@@ -1317,6 +1401,18 @@ async function handleInundationExecute(data: {
 async function handleInundationReset() {
   console.log("📩 收到淹没监测重置按钮点击事件");
   await deleteInundationAlgorithm();
+  await deleteHeatmapAlgorithm();
+  await setSceneStyle(App, "false");
+  await setSceneOpacity(App, "水系", 1);
+  await setSceneOpacity(App, "建筑", 1);
+  await setSceneOpacity(App, "地形", 1);
+  await setSceneOpacity(App, "道路", 1);
+  await setPipelineVisible(App, true, "rain_line", ["SN", "SL", "ZT"]);
+  await setPipeNodeVisible(App, true, "rain_node", ["HNT"]);
+  await setPipeLiquidLevel(App, 0, "#ff4d00ff", "rain_line");
+  await setPipeLiquidLevel(App, 0, "#ff4d00ff", "sewage_line");
+  isLiquidLevelSet.value = false;
+  await handlePipeLabelToggled(false);
 }
 
 async function handleCreatePumpPoi() {
@@ -1807,7 +1903,8 @@ async function handleCreateWaterlogPoi() {
 
   await createAndRunInundation(
     App,
-    "http://10.100.10.124:8090/inundation/water_point_grid/nanjing/Inud_Gen.json"
+    "http://10.100.10.124:8090/inundation/water_point_grid/nanjing/Inud_Gen.json",
+    5
   );
 
   await enableInundationInteract(App, true, true);
@@ -1893,7 +1990,8 @@ async function handleOpenPumpCar() {
 
   await createAndRunInundation(
     App,
-    "http://10.100.10.124:8090/inundation/water_point_grid/nanjing/Inud_Gen.json"
+    "http://10.100.10.124:8090/inundation/water_point_grid/nanjing/Inud_Gen.json",
+    5
   );
 
   await enableInundationInteract(App, true, true);

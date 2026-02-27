@@ -101,7 +101,6 @@ import { UploadFilled } from "@element-plus/icons-vue";
 import { ElMessage } from "element-plus";
 import type { UploadInstance } from "element-plus";
 import axios from "axios";
-import * as echarts from "echarts";
 import { ShapefileLoader } from "@/utils/ShapefileLoader";
 const loader = new ShapefileLoader();
 
@@ -116,7 +115,20 @@ const isUploadLoading = ref(false);
 
 const loadingProgress = ref<number>(0);
 
-const UserDatafieldNames = ref<string[]>([]); // 存储字段名称数组
+const UserDatafieldNames = ref<string[]>([
+  "Wyid",
+  "cz",
+  "gj",
+  "length",
+  "flow",
+  "qdb",
+  "zdb",
+  "start_lon",
+  "start_lat",
+  "end_lon",
+  "end_lat",
+]);
+// 存储字段名称数组
 
 // 字段映射数据
 const fieldMappings = ref([
@@ -370,16 +382,17 @@ const handleManualUpload = async () => {
   // 1秒后移除loading状态
   await new Promise((resolve) => setTimeout(resolve, 1000));
   isUploadLoading.value = false;
-  if (pipeUpload.value) {
-    pipeUpload.value.submit(); // 手动触发上传
-  }
+  emit("update:pipeUploadStepActive", 1);
+  // if (pipeUpload.value) {
+  //   pipeUpload.value.submit(); // 手动触发上传
+  // }
 
-  const geojson = await loader.processFiles(uploadFileList.value as any);
-  if (geojson) {
-    // 提取属性表
-    const attributes = loader.extractAttributeTable(geojson);
-    console.log("属性表:", attributes);
-  }
+  // const geojson = await loader.processFiles(uploadFileList.value as any);
+  // if (geojson) {
+  //   // 提取属性表
+  //   const attributes = loader.extractAttributeTable(geojson);
+  //   console.log("属性表:", attributes);
+  // }
 };
 
 const saveFieldMappings = () => {

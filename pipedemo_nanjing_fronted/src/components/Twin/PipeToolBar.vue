@@ -135,7 +135,7 @@
         </div>
       </div>
 
-      <!-- 图标12 -->
+      <!-- 风格图标 -->
       <div class="icon-container" :class="{ 'icon-container-expanded': activeToolIndex === 11 }">
         <div class="icon-wrapper" :class="{ active: activeToolIndex === 11 }" @click="() => handleToolClick(11)">
           <div class="icon" style="display: flex; align-items: center; justify-content: center">
@@ -224,7 +224,7 @@
 
       <!-- 图标12 -->
       <div class="icon-container" :class="{ 'icon-container-expanded': isAICardVisible }">
-        <div class="icon-wrapper" :class="{ active: isAICardVisible }" @click="() => handleToolClick(11)">
+        <div class="icon-wrapper" :class="{ active: isAICardVisible }" @click="() => handleToolClick(12)">
           <div class="icon" style="display: flex; align-items: center; justify-content: center">
             <img src="@/assets/pngs/pipetoolbar/12.png" style="width: 26px; height: 26px" />
           </div>
@@ -767,6 +767,10 @@ const handleSceneStyle = () => {
 
 const handleResetSceneStyle = () => {
   emit("resetSceneStyleClicked");
+  secenStyle.value = "false";
+  sceneBlurType.value = "none";
+  sceneBlurValue.value = 0.5;
+  secenWeather.value = "none";
 };
 
 const handleSpeEffect = () => {
@@ -819,7 +823,7 @@ const handleToolClick = (index: number) => {
     return;
   }
 
-  if (index === 11) {
+  if (index === 12) {
     activeToolIndex.value = null;
     isPipeEditorExpand.value = false;
     isPipeLabelexpand.value = false;

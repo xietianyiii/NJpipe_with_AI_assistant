@@ -1,21 +1,16 @@
 <template>
-  <div
-    v-show="visible"
-    class="draggable-card"
-    :style="{ top: position.y + 'px', left: position.x + 'px' }"
-    @mousedown="startDrag"
-    ref="cardRef"
-  >
+  <div v-show="visible" class="draggable-card" :style="{ top: position.y + 'px', left: position.x + 'px' }"
+    @mousedown="startDrag" ref="cardRef">
     <div class="card-header">
       <span>GridID: {{ title }}</span>
       <button class="close-btn" @click="$emit('close')">✕</button>
     </div>
 
     <div class="card-body">
-      <div class="row">当前时序水深值: {{ Inuvalue.toFixed(4) }} m</div>
-      <div class="row">历史水深曲线: 单位(m)</div>
+      <!-- <div class="row">当前时序水深值: {{ Inuvalue.toFixed(4) }} m</div>
+      <div class="row">历史水深曲线: 单位(m)</div> -->
       <div class="row">
-        <div ref="chartRef" style="width: 270px; height: 150px"></div>
+        <div ref="chartRef" style="width: 300px; height: 140px"></div>
       </div>
 
       <!-- <div class="row">
@@ -41,7 +36,7 @@ const props = defineProps({
 
 const emit = defineEmits(["close"]);
 
-const position = ref({ x: 1500, y: 300 });
+const position = ref({ x: 400, y: 300 });
 const isDragging = ref(false);
 const offset = ref({ x: 0, y: 0 });
 const cardRef = ref<HTMLElement | null>(null);
@@ -172,7 +167,7 @@ watch(
   () => props.visible,
   (n) => {
     if (n) {
-      position.value = { x: 1500, y: 300 };
+      position.value = { x: 500, y: 300 };
     }
   }
 );
@@ -198,7 +193,7 @@ const renderChart = () => {
       }
     },
     grid: {
-      top: 20,
+      top: 35,
       left: 35,
       right: 10,
       bottom: 20,
@@ -211,11 +206,12 @@ const renderChart = () => {
       axisLabel: { color: "#FFFFFF" }, // ✔ X轴文字白色
       axisLine: { lineStyle: { color: "transparent" } }, // ✔ X轴轴线无色
       axisTick: { lineStyle: { color: "#CCCCCC" } }, // ✔ X轴刻度线白灰色
-      name: "日期",
-      nameLocation: "end",
+      name: "时\n间\n\n",
+      nameLocation: "end",   // middle / end / start
+      nameGap: 5,              // 与轴线的距离（很重要）
       nameTextStyle: {
-        color: "#FFFFFF",
-        fontSize: 10,
+        color: "#ffffff",
+        fontSize: 12,
       },
     },
     yAxis: {
@@ -228,11 +224,10 @@ const renderChart = () => {
         color: "#FFFFFF",
         formatter: (value: number) => value.toFixed(1),
       },
-      name: "水深(m)",
-      nameLocation: "end",
+      name: "水深 (m)",
       nameTextStyle: {
-        color: "#FFFFFF",
-        fontSize: 10,
+        color: '#ffffff',
+        fontSize: 12
       },
       nameGap: 20,
     },
@@ -303,24 +298,18 @@ onMounted(() => {
 <style scoped>
 .draggable-card {
   position: absolute;
-  width: 280px;
-  background-color: rgba(79, 99, 113, 0.7);
-  border: 2px solid rgba(248, 248, 248, 0.8);
-  border-radius: 12px;
-  box-shadow: 0 0 15px rgba(0, 191, 255, 0.8);
+  background: url("http://10.100.10.124:8090/inundation/poi/poi-window-curve-bg.png") no-repeat center / 100% 100%;
+  width: 303px;
   padding: 16px 20px;
   font-size: 14px;
   z-index: 999;
-  backdrop-filter: blur(6px);
+  border-radius: 12px;
+  backdrop-filter: blur(3px);
   transition: transform 0.3s ease, box-shadow 0.3s ease;
   pointer-events: auto;
   user-select: none;
   cursor: grab;
   animation: popupAppear 0.3s ease-out;
-}
-
-.draggable-card:hover {
-  box-shadow: 0 5px 20px rgba(0, 191, 255, 1);
 }
 
 .draggable-card:active {
@@ -332,6 +321,7 @@ onMounted(() => {
     opacity: 0;
     transform: scale(0.8) translateY(20px);
   }
+
   to {
     opacity: 1;
     transform: scale(1) translateY(0);
@@ -349,15 +339,12 @@ onMounted(() => {
   font-family: "SHJGSK";
   margin-bottom: 10px;
   padding-bottom: 8px;
-  border-bottom: 1px solid rgba(248, 248, 248, 0.5);
 }
 
 .close-btn {
-  background: radial-gradient(
-    circle at 30% 30%,
-    rgba(5, 50, 66, 0.5),
-    rgba(0, 212, 255, 0.5)
-  );
+  background: radial-gradient(circle at 30% 30%,
+      rgba(5, 50, 66, 0.5),
+      rgba(0, 212, 255, 0.5));
   border: 1px solid rgba(248, 248, 248, 0.8);
   border-radius: 50%;
   width: 24px;
@@ -373,12 +360,10 @@ onMounted(() => {
 }
 
 .close-btn:hover {
-  background: radial-gradient(
-    circle at 0% 60%,
-    #1a918b 0%,
-    #0099c8 60%,
-    #00e5ff 100%
-  );
+  background: radial-gradient(circle at 0% 60%,
+      #1a918b 0%,
+      #0099c8 60%,
+      #00e5ff 100%);
   box-shadow: 0 0 10px rgba(0, 255, 255, 1);
   transform: scale(1.1);
 }
@@ -395,6 +380,7 @@ onMounted(() => {
     opacity: 0;
     transform: translateY(10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
