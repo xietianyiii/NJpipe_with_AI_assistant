@@ -1076,50 +1076,50 @@ async function handlePipeLabelToggled(visible: boolean) {
 }
 
 async function handlePipeEditorToggled(enabled: boolean) {
-  if (enabled) {
-    // const position: [number, number, number] = [
-    //   118.77865852174354, 32.04322893874825, 34.52940467867208,
-    // ];
-    // const rotation = { pitch: -8.504061698913574, yaw: -87.82658386230469 };
-    // await updateCamera(App, position, rotation, 2);
+  // if (enabled) {
+  //   // const position: [number, number, number] = [
+  //   //   118.77865852174354, 32.04322893874825, 34.52940467867208,
+  //   // ];
+  //   // const rotation = { pitch: -8.504061698913574, yaw: -87.82658386230469 };
+  //   // await updateCamera(App, position, rotation, 2);
 
-    await enablePipelineClick(App, true);
-    await registerPipelineClickEvent(App, async (res) => {
-      const info = extractPipelineClickInfo(res);
-      if (!info) return;
+  //   await enablePipelineClick(App, true);
+  //   await registerPipelineClickEvent(App, async (res) => {
+  //     const info = extractPipelineClickInfo(res);
+  //     if (!info) return;
 
-      currentPipeEid.value = info.eid;
-      currentPipeFid.value = info.fId;
+  //     currentPipeEid.value = info.eid;
+  //     currentPipeFid.value = info.fId;
 
-      try {
-        const response = await fetch(
-          `/pipes/pipenet_nanjing/${info.fId}`
-        );
-        if (!response.ok) throw new Error("查询失败");
+  //     try {
+  //       const response = await fetch(
+  //         `/pipes/pipenet_nanjing/${info.fId}`
+  //       );
+  //       if (!response.ok) throw new Error("查询失败");
 
-        const data = await response.json();
-        pipeDetailAttriInfo.value = data;
-        PipeAttriFID.value = info.fId;
-        PipeAttriEID.value = info.eid;
-        showPipeAttriInfo.value = true;
-      } catch (err) {
-        console.error(err);
-        alert("无法获取管网详细属性！");
-      }
-    });
+  //       const data = await response.json();
+  //       pipeDetailAttriInfo.value = data;
+  //       PipeAttriFID.value = info.fId;
+  //       PipeAttriEID.value = info.eid;
+  //       showPipeAttriInfo.value = true;
+  //     } catch (err) {
+  //       console.error(err);
+  //       alert("无法获取管网详细属性！");
+  //     }
+  //   });
 
-    // await setPipelineHeight(App, 2, "rain_line");
-    const fids1 = ["c8c92f4e", "b50f7eb5"];
-    await setPipelineHighlight(
-      App,
-      true,
-      "#b53845ff",
-      35,
-      [""],
-      "rain_line",
-      fids1
-    );
-  }
+  //   // await setPipelineHeight(App, 2, "rain_line");
+  //   const fids1 = ["c8c92f4e", "b50f7eb5"];
+  //   await setPipelineHighlight(
+  //     App,
+  //     true,
+  //     "#b53845ff",
+  //     35,
+  //     [""],
+  //     "rain_line",
+  //     fids1
+  //   );
+  // }
 }
 
 let PipSpeEffectUpdated = false;
