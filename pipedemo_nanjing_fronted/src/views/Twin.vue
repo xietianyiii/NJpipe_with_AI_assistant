@@ -6,22 +6,23 @@
     <!-- 面板组件 -->
     <div class="panel-container">
       <Header />
-
-      <DrainagePanel v-if="activePanel === 'drainage'" @open-pipe-overview="handleOpenPipeOverview"
-        @close-pipe-overview="handleClosePipeOverview" @create-pump-poi="handleCreatePumpPoi"
-        @close-pump-poi="handleDeletePumpPoi" @open-sewage-plant="handleOpenSewagePlant"
-        @close-sewage-plant="handleCloseSewagePlant" @open-water-zone="handleOpenWaterZone"
-        @close-water-zone="handleCloseWaterZone" @open-struc-defect="handleOpenStrucDefect"
-        @close-struc-defect="handleCloseStrucDefect" @open-func-defect="handleOpenFuncDefect"
-        @close-func-defect="handleCloseFuncDefect" />
-      <MonitorPanel v-if="activePanel === 'monitor'" @create-rain-poi="handleCreateRainPoi"
-        @close-rain-poi="handleDeleteRainPoi" @open-pipe-liquid="handleOpenPipeLiquid"
-        @open-lake-moni="handleOpenLakeMoni" @close-water-moni="handleCloseWaterMoni"
-        @create-waterlog-poi="handleCreateWaterlogPoi" @close-waterlog-poi="handleDeleteWaterlogPoi"
-        @wtlog-click="handleWaterlogClick" />
-      <SimPanel v-if="activePanel === 'sim'" @open-pump-car="handleOpenPumpCar" @close-pump-car="handleClosePumpCar"
-        @open-dispatch-plan="handleOpenDispatchPlan" @close-dispatch-plan="handleCloseDispatchPlan"
-        @open-dispatch-execute="handleOpenDispatchExecute" />
+      <PullCord v-model="isSidebarVisible"/>
+      <DrainagePanel v-if="activePanel === 'drainage'" :sidebarVisible="isSidebarVisible"
+        @open-pipe-overview="handleOpenPipeOverview" @close-pipe-overview="handleClosePipeOverview"
+        @create-pump-poi="handleCreatePumpPoi" @close-pump-poi="handleDeletePumpPoi"
+        @open-sewage-plant="handleOpenSewagePlant" @close-sewage-plant="handleCloseSewagePlant"
+        @open-water-zone="handleOpenWaterZone" @close-water-zone="handleCloseWaterZone"
+        @open-struc-defect="handleOpenStrucDefect" @close-struc-defect="handleCloseStrucDefect"
+        @open-func-defect="handleOpenFuncDefect" @open-defect-detection="handleAIAnalysis"
+        @open-defect-repair="handleAIRepair" @close-func-defect="handleCloseFuncDefect" />
+      <MonitorPanel v-if="activePanel === 'monitor'" :sidebarVisible="isSidebarVisible"
+        @create-rain-poi="handleCreateRainPoi" @close-rain-poi="handleDeleteRainPoi"
+        @open-pipe-liquid="handleOpenPipeLiquid" @open-lake-moni="handleOpenLakeMoni"
+        @close-water-moni="handleCloseWaterMoni" @create-waterlog-poi="handleCreateWaterlogPoi"
+        @close-waterlog-poi="handleDeleteWaterlogPoi" @wtlog-click="handleWaterlogClick" />
+      <SimPanel v-if="activePanel === 'sim'" :sidebarVisible="isSidebarVisible" @open-pump-car="handleOpenPumpCar"
+        @close-pump-car="handleClosePumpCar" @open-dispatch-plan="handleOpenDispatchPlan"
+        @close-dispatch-plan="handleCloseDispatchPlan" @open-dispatch-execute="handleOpenDispatchExecute" />
 
       <LegendCard v-show="showLegendCard" :legend-type="currentLegendType"
         @selection-change="handleLegendSelectionChange" />
@@ -77,9 +78,9 @@
         </button>  -->
         <!-- <button class="control-btn" @click="handleGetCameraInfo">
           <span>获取相机信息</span>
-        </button> -->
+        </button>
         <div class="path-builder">
-          <!-- <button @click="temstartPick">开始取点</button>
+          <button @click="temstartPick">开始取点</button>
           <button @click="temendPick">绘制路径</button>
 
           <label>
@@ -94,14 +95,14 @@
                 {{ item }}
               </option>
             </select>
-          </label> -->
+          </label>
 
-          <!-- <label>
+          <label>
             宽度：
             <input type="number" v-model.number="temwidth" min="1" max="2000" step="1" />
-          </label> -->
+          </label>
 
-          <!-- <label>
+          <label>
             路过颜色：
             <input type="color" v-model="tempasscolor" />
           </label>
@@ -111,9 +112,23 @@
             <input type="number" v-model.number="temspeed" min="0" max="1" step="0.1" />
           </label>
 
+          <label>
+            高度参考模式：
+            <select v-model="temcoordZRef">
+              <option v-for="item in temcoordZRefs" :key="item" :value="item">
+                {{ item }}
+              </option>
+            </select>
+          </label>
+
+          <label>
+            高度偏移量：
+            <input type="number" v-model.number="temcoordZOffset" min="0" max="1000" step="1" />
+          </label>
+
           <button @click="temexportPath">导出路径</button>
-          <button @click="temclearPath">删除路径</button> -->
-        </div>
+          <button @click="temclearPath">删除路径</button>
+        </div> -->
 
       </div>
     </div>
@@ -134,7 +149,7 @@ import {
 import { useRoute } from "vue-router";
 import WdpApi from "wdpapi";
 import WimApi from "@wdp-api/wim-api";
-import { FloodPumpCarMovePaths, WaterZone1PipePaths, WaterZone2PipePaths, WaterZone3PipePaths, WaterZone4PipePaths } from "@/configs/Path/movePath";
+import { FloodPumpCarMovePaths, WaterZone1PipePaths, WaterZone2PipePaths, WaterZone3PipePaths, WaterZone4PipePaths, SewageBlueMovePaths, SewageRedMovePaths } from "@/configs/Path/movePath";
 import { InundationGenerator } from "@/utils/Inund_Gen";
 import { createPois } from "@/utils/createPois";
 import { handleDeleteAllPois } from "@/utils/deletePois";
@@ -224,14 +239,18 @@ const temstyles = ref(["arrow",
   "dashed_dot",
   "flash",
   "scan_line",]);
-const temstyle = ref(temstyles.value[8]);
+const temstyle = ref(temstyles.value[10]);
 
 const temcolor = ref("#0000FF");
 const tempasscolor = ref("#0000FF");
 const tempickedPoints = ref<Record<string, [number, number, number][]>>({});
 const tempathIndex = ref(0);
-const temwidth = ref(500);
-const temspeed = ref(0.5);
+const temwidth = ref(10);
+const temspeed = ref(5);
+const temcoordZRefs = ref(["altitude", "ground", "surface"]);
+const temcoordZRef = ref(temcoordZRefs.value[2]);
+const temcoordZOffset = ref(2);
+const isSidebarVisible = ref(true)
 
 async function temstartPick() {
   await startPickPoint(App, false, true, "surface");
@@ -266,6 +285,8 @@ async function temendPick() {
     temwidth.value,
     temspeed.value,
     tempasscolor.value,
+    temcoordZRef.value,
+    temcoordZOffset.value,
   );
 
   tempathIndex.value++;
@@ -297,6 +318,9 @@ const temexportPath = () => {
 
 const LegendCard = defineAsyncComponent(
   () => import("@/components/Twin/legend-card.vue")
+);
+const PullCord = defineAsyncComponent(
+  () => import("@/components/Twin/PullCord.vue")
 );
 const InuClickInfoCard = defineAsyncComponent(
   () => import("@/components/Twin/InuClickInfo-card.vue")
@@ -1296,6 +1320,27 @@ async function handleResetSceneStyleClicked() {
   await App.Environment.SetSceneWeather("Sunny");
 }
 
+const getUEDebugLogs = async () => {
+  console.log("📩 收到获取UE日志按钮点击事件", App);
+  const res = await App.Debug.GetDebugLogs()
+  const _result = res.result.logCaches
+  const blob = new Blob([_result], { type: "text/plain" })
+  const aElement = document.createElement("a")
+  aElement.download = "uelog.log"
+  const urlObject = window.URL || window.webkitURL || window
+  aElement.href = urlObject.createObjectURL(blob)
+  aElement.click()
+  urlObject.revokeObjectURL
+}
+
+declare global {
+  interface Window {
+    getUEDebugLogs: () => Promise<void>
+  }
+}
+
+window.getUEDebugLogs = getUEDebugLogs
+
 async function handleInundationExecute(data: {
   moniType: string
   moniScheme: string
@@ -1476,10 +1521,39 @@ async function handleOpenSewagePlant() {
   ];
   const rotation = { pitch: -19.70302963256836, yaw: 33.881568908691406 };
   await updateCamera(App, position, rotation, 2);
+
+  await createMovePathsFromRecord(
+    App,
+    SewageBlueMovePaths,
+    {
+      color: "#0000FF",
+      pathType: "scan_line",
+      width: 3,
+      speedupFactor: 20,
+      passColor: "#0000FF",
+      coordZRef: "ground",
+      coordZOffset: 2,
+    }
+  );
+
+  await createMovePathsFromRecord(
+    App,
+    SewageRedMovePaths,
+    {
+      color: "#2F4F4F",
+      pathType: "scan_line",
+      width: 3,
+      speedupFactor: 20,
+      passColor: "#2F4F4F",
+      coordZRef: "ground",
+      coordZOffset: 2,
+    }
+  );
 }
 
 async function handleCloseSewagePlant() {
   console.log("📩 收到污水厂监测按钮关闭点击事件");
+  await deleteAllMovePaths(App);
 }
 
 async function handleOpenWaterZone() {
@@ -2163,7 +2237,7 @@ async function handleAIAnalysis() {
     App,
     true,
     "#ff0000ff",
-    5,
+    1,
     [""],
     "sewage_line",
     fids1
@@ -2214,7 +2288,7 @@ async function handleAIAnalysis() {
     App,
     true,
     "#0d00ffff",
-    5,
+    1,
     [""],
     "sewage_line",
     fids2
@@ -2247,7 +2321,7 @@ async function handleAIAnalysis() {
     App,
     true,
     "#55ff00ff",
-    5,
+    1,
     [""],
     "sewage_line",
     fids3
@@ -2272,7 +2346,7 @@ async function handleAIAnalysis() {
     App,
     true,
     "#04f8dfff",
-    5,
+    1,
     [""],
     "sewage_line",
     fids4
@@ -2305,7 +2379,7 @@ async function handleAIAnalysis() {
     App,
     true,
     "#fbff00ff",
-    5,
+    1,
     [""],
     "sewage_line",
     fids5
@@ -2330,7 +2404,7 @@ async function handleAIAnalysis() {
     App,
     true,
     "#ff9f05ff",
-    5,
+    1,
     [""],
     "sewage_node",
     fids6
@@ -2563,10 +2637,10 @@ async function handleAIRepair() {
 
   await new Promise((resolve) => setTimeout(resolve, 1500));
 
-  await setPipelineHeight(App, 15, "rain_line");
-  await setPipeNodeHeight(App, 16.7, "rain_node");
+  // await setPipelineHeight(App, 15, "rain_line");
+  // await setPipeNodeHeight(App, 16.7, "rain_node");
 
-  await new Promise((resolve) => setTimeout(resolve, 3000));
+  // await new Promise((resolve) => setTimeout(resolve, 3000));
 
   await setPipelineHighlight(
     App,
@@ -3033,5 +3107,9 @@ onBeforeUnmount(() => {
   font-size: 14px;
   width: 150px;
   background: rgba(255, 255, 255, 0.9);
+}
+
+.sidebar-toggle-btn {
+  pointer-events: auto;
 }
 </style>

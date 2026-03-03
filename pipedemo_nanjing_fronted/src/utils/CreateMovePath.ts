@@ -81,6 +81,8 @@ export async function createMovePath(
  * @param width - 路径宽度
  * @param speedupFactor - 路径加速因子
  * @param passColor - 路径通过颜色
+ * @param coordZRef - 高度参考模式 (默认: "altitude")
+ * @param coordZOffset - 高度偏移量 (默认: 30)
  * @returns 
  */
 export async function createMultiMovePath(
@@ -90,7 +92,9 @@ export async function createMultiMovePath(
     pathType: string = "arrow",
     width: number = 20,
     speedupFactor: number = 1,
-    passColor: string = "c9ff23ff"
+    passColor: string = "c9ff23ff",
+    coordZRef: string = "altitude",
+    coordZOffset: number = 30,
 ): Promise<any> {
     if (!App?.Scene) {
         console.error("❌ App 实例无效");
@@ -117,7 +121,7 @@ export async function createMultiMovePath(
         });
 
         const res = await App.Scene.Add(path, {
-            calculateCoordZ: { coordZRef: "altitude", coordZOffset: 30 },
+            calculateCoordZ: { coordZRef: coordZRef, coordZOffset: coordZOffset },
         });
 
         if (res.success) {
@@ -537,6 +541,8 @@ export async function createMovePathsFromRecord(
     width?: number;
     speedupFactor?: number;
     passColor?: string;
+    coordZRef?: string;
+    coordZOffset?: number;
   }
 ): Promise<any[]> {
   const results: any[] = [];
@@ -561,7 +567,9 @@ export async function createMovePathsFromRecord(
       options?.pathType ?? "arrow",
       options?.width ?? 20,
       options?.speedupFactor ?? 1,
-      options?.passColor ?? "c9ff23ff"
+      options?.passColor ?? "c9ff23ff",
+      options?.coordZRef ?? "altitude",
+      options?.coordZOffset ?? 30,
     );
 
     if (path) {

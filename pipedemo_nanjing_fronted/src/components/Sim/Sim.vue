@@ -5,7 +5,7 @@
         <img class="sidebar-background-right-img" src="@/assets/pngs/BG/sidebar/R.png" />
       </div>
     </div>
-    <div class="sidebar">
+    <div class="sidebar" v-show="props.sidebarVisible">
       <div class="sidebar-left">
       </div>
       <div class="sidebar-right">
@@ -240,6 +240,10 @@ import contentRbg2 from "@/assets/pngs/BG/sidebar/card/background/R_Content2.png
 import NumberUnit from "@/components/ReuseCop/NumberUnit.vue";
 import BaseCard from "@/components/ReuseCop/BaseCard.vue";
 import BaseSelect from "@/components/ReuseCop/BaseSelect.vue";
+
+const props = defineProps({
+  sidebarVisible: { type: Boolean, default: true },
+})
 
 const emit = defineEmits<{
   (e: "open-pump-car"): void;
@@ -596,7 +600,7 @@ function handleDispatchExecution() {
   transform: scale(0.98);
 }
 
-.Rcard2-content-item3-button3.active { 
+.Rcard2-content-item3-button3.active {
   background: url("@/assets/pngs/BG/sidebar/Sim/button/backhover.png") no-repeat center/ 100% 100%;
   width: 271px;
   height: 26px;

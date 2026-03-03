@@ -12,11 +12,18 @@
 
     <div class="card-body" @mousedown.stop>
       <div class="introduce-container">
-        <img
-          src="@/assets/pngs/AICard/51icon.png"
-          alt="AI 助手"
-          class="avatar"
-        />
+        <div class="avatar-container">
+          <!-- <img
+            src="@/assets/pngs/AICard/LOGO51.png"
+            alt="AI 助手"
+            class="avatar1"
+          /> -->
+          <img
+            src="@/assets/pngs/AICard/绿-发光.png"
+            alt="AI 助手"
+            class="avatar"
+          />
+        </div>
         <span class="introduce-text">你好，有什么可以帮你</span>
       </div>
 
@@ -59,10 +66,8 @@ function onRegenerate(index: number) {
   props.chat.regenerateFrom(index);
 }
 
-function onFeedback(payload: { index: number; type: "up" | "down" }) {
-  console.log("用户点赞/点踩：", payload);
-
-  const { index, type } = payload;
+function onFeedback(index: number, type: "up" | "down") {
+  console.log("用户点赞/点踩：", { index, type });
   props.chat.toggleFeedback(index, type);
 }
 
@@ -215,7 +220,7 @@ onMounted(() => {});
   user-select: none;
   cursor: grab;
   animation: popupAppear 0.3s ease-out;
-  max-height: 700px;
+  max-height: 800px;
   scrollbar-width: none;
 }
 
@@ -315,16 +320,28 @@ onMounted(() => {});
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-top: 30px;
-  margin-bottom: 30px;
+  margin-top: -20px;
+  margin-bottom: -20px;
 }
+
 .avatar {
-  width: 60px;
-  margin-right: 10px;
+  width: 160px;
+  margin-right: -20px;
+  margin-left: -25px;
+}
+
+.avatar1 {
+  width: 53%;
+  height: 53px;
 }
 
 .introduce-text {
   color: #ffffff;
   font-size: 18px;
+}
+
+.avatar-container{
+  display: flex;
+  align-items: center;
 }
 </style>

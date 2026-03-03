@@ -8,13 +8,13 @@
         <img class="sidebar-background-right-img" src="@/assets/pngs/BG/sidebar/R.png" />
       </div>
     </div>
-    <div class="sidebar">
+    <div class="sidebar" v-show="props.sidebarVisible">
       <div class="sidebar-left">
 
         <div class="sidebar-left-card card1">
           <BaseCard title="管网总览" titleType="left" :contentBg="contentLbg1" width="344px" height="184px"
-            contentClass="card1-content-row" clickable @titleClick="onOpenPipeOverViewClick"
-            @titleCancel="onClosePipeOverViewClick">
+            contentClass="card1-content-row" clickable @titleClick="handleCardTitleClick('pipeOverView')"
+            @titleCancel="handleCardTitleCancel('pipeOverView')">
             <div class="card-content-row card1-row1">
               <div class="card-content-row-left card1-row1-left">
                 <div class="card-content-row-left-icon card1-row1-left-icon">
@@ -78,8 +78,8 @@
 
         <div class="sidebar-left-card card2">
           <BaseCard title="泵站监测" titleType="left" :contentBg="contentLbg2" width="344px" height="156px"
-            contentClass="card2-content-row" clickable @titleClick="onCreatePumpPoiClick"
-            @titleCancel="onClosePumpPoiClick">
+            contentClass="card2-content-row" clickable @titleClick="handleCardTitleClick('pumpStation')"
+            @titleCancel="handleCardTitleCancel('pumpStation')">
             <div class="card2-left-chart-container-wrapper">
               <div class="card2-left-chart-container">
                 <RainPumpChart1 />
@@ -103,8 +103,8 @@
 
         <div class="sidebar-left-card card3">
           <BaseCard title="污水厂概况" titleType="left" :contentBg="contentLbg3" width="344px" height="80px"
-            contentClass="card3-content-row" clickable @titleClick="onOpenSewagePlantClick"
-            @titleCancel="onCloseSewagePlantClick">
+            contentClass="card3-content-row" clickable @titleClick="handleCardTitleClick('sewagePlant')"
+            @titleCancel="handleCardTitleCancel('sewagePlant')">
             <div class="card3-content-left-container">
               <div class="card3-left-icon">
                 <img class="card3-left-icon-img" src="@/assets/pngs/BG/sidebar/card/card3-svg/icon-left.png" />
@@ -128,8 +128,8 @@
 
         <div class="sidebar-left-card card4">
           <BaseCard title="排水分区" titleType="left" :contentBg="contentLbg4" width="344px" height="240px"
-            contentClass="card4-content-row" clickable @titleClick="onOpenWaterZoneClick"
-            @titleCancel="onCloseWaterZoneClick">
+            contentClass="card4-content-row" clickable @titleClick="handleCardTitleClick('waterZone')"
+            @titleCancel="handleCardTitleCancel('waterZone')">
             <div class="card4-content-row card4-row1">
               <div class="card4-row1-icon">
                 <img class="card4-row1-icon-img" src="@/assets/pngs/BG/sidebar/card/card4-svg/row1-icon.png" />
@@ -286,6 +286,15 @@
               </div>
             </div>
             <div class="Rcard2-content-item3">
+              <div class="Rcard2-content-item1-button1" @click="handleDefectDetectionClick">
+                智能检测
+              </div>
+              <div class="Rcard2-content-item1-button2" @click="handleDefectRepairClick">
+                智能修复
+              </div>
+            </div>
+
+            <div class="Rcard2-content-item4">
               <ReuseTable :columns="defectColumns" :data="defectRows" clickable @row-click="onDefectRowClick" />
             </div>
 
@@ -321,6 +330,10 @@ type DefectType = "structural" | "functional";
 
 const activeDefectButton = ref<DefectType | null>(null);
 
+const props = defineProps({
+  sidebarVisible: { type: Boolean, default: true },
+})
+
 const emit = defineEmits<{
   (e: "open-pipe-overview"): void;
   (e: "close-pipe-overview"): void;
@@ -334,6 +347,8 @@ const emit = defineEmits<{
   (e: "close-struc-defect"): void;
   (e: "open-func-defect"): void;
   (e: "close-func-defect"): void;
+  (e: "open-defect-detection"): void;
+  (e: "open-defect-repair"): void;
 }>();
 
 const legendCardVisible = ref(false)
@@ -364,13 +379,20 @@ const RainPumpChart6 = defineAsyncComponent(
   () => import("@/components/Drainage/Chart/card6-chart.vue")
 );
 
+const activeCardId = ref<string | null>(null)
+
+const cardConfigs = [
+  { id: 'pipeOverView', onOpen: onOpenPipeOverViewClick, onClose: onClosePipeOverViewClick },
+  { id: 'pumpStation', onOpen: onCreatePumpPoiClick, onClose: onClosePumpPoiClick },
+  { id: 'sewagePlant', onOpen: onOpenSewagePlantClick, onClose: onCloseSewagePlantClick },
+  { id: 'waterZone', onOpen: onOpenWaterZoneClick, onClose: onCloseWaterZoneClick },
+]
+
 const defectRows = ref([
   { id: "36170506", location: "西城区-管段 B-05", defect: "错位" },
   { id: "a569a225", location: "东城区-管段 C-22", defect: "悬挂" },
   { id: "v230a225", location: "北城区-管段 A-52", defect: "悬挂" },
-  { id: "t982a225", location: "南城区-管段 N-19", defect: "交叉" },
   { id: "s985a225", location: "西城区-管段 H-33", defect: "悬挂" },
-  { id: "q211a225", location: "东城区-管段 W-22", defect: "偏差" },
 ]);
 
 const defectColumns = [
@@ -378,6 +400,14 @@ const defectColumns = [
   { key: "location", label: "位置" },
   { key: "defect", label: "缺陷名称" },
 ]
+
+function handleDefectDetectionClick() {
+  emit("open-defect-detection");
+}
+
+function handleDefectRepairClick() {
+  emit("open-defect-repair");
+}
 
 function onOpenPipeOverViewClick() {
   emit("open-pipe-overview");
@@ -411,6 +441,33 @@ function onOpenWaterZoneClick() {
 function onCloseWaterZoneClick() {
   emit("close-water-zone");
   legendCardVisible.value = false
+}
+
+const handleCardTitleClick = async (cardId: string) => {
+  const card = cardConfigs.find(c => c.id === cardId)
+  if (!card) return
+
+  // 有其他卡片激活时，先触发它的 cancel
+  if (activeCardId.value && activeCardId.value !== cardId) {
+    cardConfigs.find(c => c.id === activeCardId.value)?.onClose()
+    await new Promise(resolve => setTimeout(resolve, 1000))
+  }
+
+  // toggle：再次点击同一张卡片则关闭
+  if (activeCardId.value === cardId) {
+    activeCardId.value = null
+    card.onClose()
+  } else {
+    activeCardId.value = cardId
+    card.onOpen()
+  }
+}
+
+const handleCardTitleCancel = (cardId: string) => {
+  const card = cardConfigs.find(c => c.id === cardId)
+  if (!card) return
+  if (activeCardId.value === cardId) activeCardId.value = null
+  card.onClose()
 }
 
 const handleDefectButtonClick = (buttonType: DefectType) => {
@@ -986,6 +1043,13 @@ const onDefectRowClick = (rowIndex: number, rowData: any) => {
 }
 
 .Rcard2-content-item3 {
+  display: flex;
+  margin-top: 2px;
+  justify-content: center;
+  gap: 10px;
+}
+
+.Rcard2-content-item4 {
   display: flex;
   margin-top: -10px;
 }

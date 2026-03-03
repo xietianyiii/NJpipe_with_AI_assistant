@@ -9,13 +9,14 @@
     <!-- 右侧图标区域 -->
     <div class="toolbar-icons">
       <!-- 图标1 -->
-      <div class="icon-container" :class="{ 'icon-container-expanded': activeToolIndex === 0 }">
-        <div class="icon-wrapper" :class="{ active: activeToolIndex === 0 }" @click="() => handleFirstToolClick()">
+      <div class="icon-container" :class="{ 'icon-container-expanded': activeToolIndex === 0 || hoverIndex === 0 }">
+        <div class="icon-wrapper" :class="{ active: activeToolIndex === 0 }" @mouseenter="hoverIndex = 0"
+          @mouseleave="hoverIndex = null" @click="() => handleFirstToolClick()">
           <div class="icon" style="display: flex; align-items: center; justify-content: center">
             <img src="@/assets/pngs/pipetoolbar/1.png" style="width: 28px; height: 28px" />
           </div>
         </div>
-        <div v-if="activeToolIndex === 0" class="icon-extension">
+        <div v-if="activeToolIndex === 0 || hoverIndex === 0" class="icon-extension">
           <div class="extension-content">
             <span class="extension-title" @click="handleDigCut">剖切</span>
             <div class="extension-divider"></div>
@@ -27,13 +28,14 @@
       </div>
 
       <!-- 图标2 -->
-      <div class="icon-container" :class="{ 'icon-container-expanded': activeToolIndex === 1 }">
-        <div class="icon-wrapper" :class="{ active: activeToolIndex === 1 }" @click="() => handleToolClick(1)">
+      <div class="icon-container" :class="{ 'icon-container-expanded': activeToolIndex === 1 || hoverIndex === 1 }">
+        <div class="icon-wrapper" :class="{ active: activeToolIndex === 1 }" @mouseenter="hoverIndex = 1"
+          @mouseleave="hoverIndex = null" @click="() => handleToolClick(1)">
           <div class="icon" style="display: flex; align-items: center; justify-content: center">
             <img src="@/assets/pngs/pipetoolbar/2.png" style="width: 28px; height: 28px" />
           </div>
         </div>
-        <div v-if="activeToolIndex === 1" class="icon-extension">
+        <div v-if="activeToolIndex === 1 || hoverIndex === 1" class="icon-extension">
           <div class="extension-content">
             <span class="extension-title" @click="handleLift">抬升</span>
             <div class="extension-divider"></div>
@@ -45,13 +47,14 @@
       </div>
 
       <!-- 图标3 -->
-      <div class="icon-container" :class="{ 'icon-container-expanded': activeToolIndex === 2 }">
-        <div class="icon-wrapper" :class="{ active: activeToolIndex === 2 }" @click="() => handleToolClick(2)">
+      <div class="icon-container" :class="{ 'icon-container-expanded': activeToolIndex === 2 || hoverIndex === 2 }">
+        <div class="icon-wrapper" :class="{ active: activeToolIndex === 2 }" @mouseenter="hoverIndex = 2"
+          @mouseleave="hoverIndex = null" @click="() => handleToolClick(2)">
           <div class="icon" style="display: flex; align-items: center; justify-content: center">
             <img src="@/assets/pngs/pipetoolbar/3.png" style="width: 28px; height: 28px" />
           </div>
         </div>
-        <div v-if="activeToolIndex === 2" class="icon-extension">
+        <div v-if="activeToolIndex === 2 || hoverIndex === 2" class="icon-extension">
           <div class="extension-content">
             <span class="extension-title" @click="handlePipeLight">高亮</span>
             <div class="extension-divider"></div>
@@ -63,14 +66,14 @@
       </div>
 
       <!-- 图标4 -->
-      <div class="icon-container" :class="{ 'icon-container-expanded': activeToolIndex === 3 }">
+      <div class="icon-container" :class="{ 'icon-container-expanded': activeToolIndex === 3 || hoverIndex === 3 }">
         <div class="icon-wrapper" :class="{ active: activeToolIndex === 3 }" id="toggleVisibility"
-          @click="() => handleToolClick(3)">
+          @mouseenter="hoverIndex = 3" @mouseleave="hoverIndex = null" @click="() => handleToolClick(3)">
           <div class="icon" style="display: flex; align-items: center; justify-content: center">
             <img src="@/assets/pngs/pipetoolbar/4.png" style="width: 28px; height: 28px" />
           </div>
         </div>
-        <div v-if="activeToolIndex === 3" class="icon-extension">
+        <div v-if="activeToolIndex === 3 || hoverIndex === 3" class="icon-extension">
           <div class="extension-content">
             <span class="extension-title" @click="handlePipeVisible">显示</span>
             <div class="extension-divider"></div>
@@ -82,13 +85,14 @@
       </div>
 
       <!-- 图标5 -->
-      <div class="icon-container" :class="{ 'icon-container-expanded': isPipeLabelexpand }">
-        <div class="icon-wrapper" :class="{ active: isPipeLabelVisible }" @click="() => handleToolClick(4)">
+      <div class="icon-container" :class="{ 'icon-container-expanded': isPipeLabelexpand || hoverIndex === 4 }">
+        <div class="icon-wrapper" :class="{ active: isPipeLabelVisible }" @mouseenter="hoverIndex = 4"
+          @mouseleave="hoverIndex = null" @click="() => handleToolClick(4)">
           <div class="icon" style="display: flex; align-items: center; justify-content: center">
             <img src="@/assets/pngs/pipetoolbar/5.png" style="width: 28px; height: 28px" />
           </div>
         </div>
-        <div v-if="isPipeLabelexpand" class="icon-extension">
+        <div v-if="isPipeLabelexpand || hoverIndex === 4" class="icon-extension">
           <div class="extension-content">
             <span class="extension-title-no-click">标签</span>
             <div class="extension-divider"></div>
@@ -100,13 +104,14 @@
       </div>
 
       <!-- 图标6 -->
-      <div class="icon-container" :class="{ 'icon-container-expanded': activeToolIndex === 5 }">
-        <div class="icon-wrapper" :class="{ active: activeToolIndex === 5 }" @click="() => handleToolClick(5)">
+      <div class="icon-container" :class="{ 'icon-container-expanded': activeToolIndex === 5 || hoverIndex === 5 }">
+        <div class="icon-wrapper" :class="{ active: activeToolIndex === 5 }" @mouseenter="hoverIndex = 5"
+          @mouseleave="hoverIndex = null" @click="() => handleToolClick(5)">
           <div class="icon" style="display: flex; align-items: center; justify-content: center">
             <img src="@/assets/pngs/pipetoolbar/6.png" style="width: 28px; height: 28px" />
           </div>
         </div>
-        <div v-if="activeToolIndex === 5" class="icon-extension">
+        <div v-if="activeToolIndex === 5 || hoverIndex === 5" class="icon-extension">
           <div class="extension-content">
             <span class="extension-title" @click="handleLiquidLevel">液位</span>
             <div class="extension-divider"></div>
@@ -118,13 +123,14 @@
       </div>
 
       <!-- 图标7 -->
-      <div class="icon-container" :class="{ 'icon-container-expanded': activeToolIndex === 6 }">
-        <div class="icon-wrapper" :class="{ active: activeToolIndex === 6 }" @click="() => handleToolClick(6)">
+      <div class="icon-container" :class="{ 'icon-container-expanded': activeToolIndex === 6 || hoverIndex === 6 }">
+        <div class="icon-wrapper" :class="{ active: activeToolIndex === 6 }" @mouseenter="hoverIndex = 6"
+          @mouseleave="hoverIndex = null" @click="() => handleToolClick(6)">
           <div class="icon" style="display: flex; align-items: center; justify-content: center">
             <img src="@/assets/pngs/pipetoolbar/7.png" style="width: 28px; height: 28px" />
           </div>
         </div>
-        <div v-if="activeToolIndex === 6" class="icon-extension">
+        <div v-if="activeToolIndex === 6 || hoverIndex === 6" class="icon-extension">
           <div class="extension-content">
             <span class="extension-title" @click="handleFlowDirection">流向</span>
             <div class="extension-divider"></div>
@@ -136,13 +142,14 @@
       </div>
 
       <!-- 风格图标 -->
-      <div class="icon-container" :class="{ 'icon-container-expanded': activeToolIndex === 11 }">
-        <div class="icon-wrapper" :class="{ active: activeToolIndex === 11 }" @click="() => handleToolClick(11)">
+      <div class="icon-container" :class="{ 'icon-container-expanded': activeToolIndex === 11 || hoverIndex === 7 }">
+        <div class="icon-wrapper" :class="{ active: activeToolIndex === 7 }" @mouseenter="hoverIndex = 7"
+          @mouseleave="hoverIndex = null" @click="() => handleToolClick(11)">
           <div class="icon" style="display: flex; align-items: center; justify-content: center">
             <img src="@/assets/pngs/pipetoolbar/style.png" style="width: 26px; height: 22px" />
           </div>
         </div>
-        <div v-if="activeToolIndex === 11" class="icon-extension">
+        <div v-if="activeToolIndex === 11 || hoverIndex === 7" class="icon-extension">
           <div class="extension-content">
             <span class="extension-title" @click="handleSceneStyle">风格</span>
             <div class="extension-divider"></div>
@@ -154,13 +161,14 @@
       </div>
 
       <!-- 图标8 -->
-      <div class="icon-container" :class="{ 'icon-container-expanded': activeToolIndex === 7 }">
-        <div class="icon-wrapper" :class="{ active: activeToolIndex === 7 }" @click="() => handleToolClick(7)">
+      <div class="icon-container" :class="{ 'icon-container-expanded': activeToolIndex === 7 || hoverIndex === 8 }">
+        <div class="icon-wrapper" :class="{ active: activeToolIndex === 7 }" @mouseenter="hoverIndex = 8"
+          @mouseleave="hoverIndex = null" @click="() => handleToolClick(7)">
           <div class="icon" style="display: flex; align-items: center; justify-content: center">
             <img src="@/assets/pngs/pipetoolbar/8.png" style="width: 28px; height: 28px" />
           </div>
         </div>
-        <div v-if="activeToolIndex === 7" class="icon-extension">
+        <div v-if="activeToolIndex === 7 || hoverIndex === 8" class="icon-extension">
           <div class="extension-content">
             <span class="extension-title" @click="handleSpeEffect">冒溢</span>
             <div class="extension-divider"></div>
@@ -172,13 +180,14 @@
       </div>
 
       <!-- 图标9 -->
-      <div class="icon-container" :class="{ 'icon-container-expanded': showPipeUploadCardExpand }">
-        <div class="icon-wrapper" :class="{ active: props.showPipeUploadCard }" @click="handlePipeUpload">
+      <div class="icon-container" :class="{ 'icon-container-expanded': showPipeUploadCardExpand || hoverIndex === 9 }">
+        <div class="icon-wrapper" :class="{ active: props.showPipeUploadCard }" @mouseenter="hoverIndex = 9"
+          @mouseleave="hoverIndex = null" @click="handlePipeUpload">
           <div class="icon" style="display: flex; align-items: center; justify-content: center">
             <img src="@/assets/pngs/pipetoolbar/9.png" style="width: 28px; height: 28px" />
           </div>
         </div>
-        <div v-if="showPipeUploadCardExpand" class="icon-extension">
+        <div v-if="showPipeUploadCardExpand || hoverIndex === 9" class="icon-extension">
           <div class="extension-content">
             <span class="extension-title-no-click">上传</span>
             <div class="extension-divider"></div>
@@ -190,13 +199,14 @@
       </div>
 
       <!-- 图标10 -->
-      <div class="icon-container" :class="{ 'icon-container-expanded': isPipeEditorExpand }">
-        <div class="icon-wrapper" :class="{ active: isPipeEditorEnable }" @click="() => handleToolClick(9)">
+      <div class="icon-container" :class="{ 'icon-container-expanded': isPipeEditorExpand || hoverIndex === 10 }">
+        <div class="icon-wrapper" :class="{ active: isPipeEditorEnable }" @mouseenter="hoverIndex = 10"
+          @mouseleave="hoverIndex = null" @click="() => handleToolClick(9)">
           <div class="icon" style="display: flex; align-items: center; justify-content: center">
             <img src="@/assets/pngs/pipetoolbar/10.png" style="width: 28px; height: 28px" />
           </div>
         </div>
-        <div v-if="isPipeEditorExpand" class="icon-extension">
+        <div v-if="isPipeEditorExpand || hoverIndex === 10" class="icon-extension">
           <div class="extension-content">
             <span class="extension-title-no-click">编辑</span>
             <div class="extension-divider"></div>
@@ -208,13 +218,14 @@
       </div>
 
       <!-- 图标11 -->
-      <div class="icon-container" :class="{ 'icon-container-expanded': isInudationCardVisible }">
-        <div class="icon-wrapper" :class="{ active: isInudationCardVisible }" @click="() => handleToolClick(10)">
+      <div class="icon-container" :class="{ 'icon-container-expanded': isInudationCardVisible || hoverIndex === 11 }">
+        <div class="icon-wrapper" :class="{ active: isInudationCardVisible }" @mouseenter="hoverIndex = 11"
+          @mouseleave="hoverIndex = null" @click="() => handleToolClick(10)">
           <div class="icon" style="display: flex; align-items: center; justify-content: center">
             <img src="@/assets/pngs/pipetoolbar/13.png" style="width: 20px; height: 20px" />
           </div>
         </div>
-        <div v-if="isInudationCardVisible" class="icon-extension">
+        <div v-if="isInudationCardVisible || hoverIndex === 11" class="icon-extension">
           <div class="extension-content">
             <span class="extension-title-no-click">淹没模拟</span>
             <div class="extension-divider"></div>
@@ -223,13 +234,14 @@
       </div>
 
       <!-- 图标12 -->
-      <div class="icon-container" :class="{ 'icon-container-expanded': isAICardVisible }">
-        <div class="icon-wrapper" :class="{ active: isAICardVisible }" @click="() => handleToolClick(12)">
+      <div class="icon-container" :class="{ 'icon-container-expanded': isAICardVisible || hoverIndex === 12 }">
+        <div class="icon-wrapper" :class="{ active: isAICardVisible }" @mouseenter="hoverIndex = 12"
+          @mouseleave="hoverIndex = null" @click="() => handleToolClick(12)">
           <div class="icon" style="display: flex; align-items: center; justify-content: center">
             <img src="@/assets/pngs/pipetoolbar/12.png" style="width: 26px; height: 26px" />
           </div>
         </div>
-        <div v-if="isAICardVisible" class="icon-extension">
+        <div v-if="isAICardVisible || hoverIndex === 12" class="icon-extension">
           <div class="extension-content">
             <span class="extension-title-no-click">AI助手</span>
             <div class="extension-divider"></div>
@@ -477,6 +489,8 @@ const secenStyle = ref("false");
 const sceneBlurType = ref("none");
 const sceneBlurValue = ref(0.5);
 const secenWeather = ref("none");
+
+const hoverIndex = ref<number | null>(null);
 
 const visiblePieType = ref("rain_line");
 const visiblePipeIds = ref<string[]>([]);
@@ -902,7 +916,7 @@ const isPipeEditorExpand = ref<boolean>(false);
 
 const isAICardVisible = ref<boolean>(false);
 const isInudationCardVisible = ref<boolean>(false);
-  
+
 // Sync with parent component's showAIQwenCard state
 watch(() => props.showAIQwenCard, (newVal) => {
   isAICardVisible.value = newVal;

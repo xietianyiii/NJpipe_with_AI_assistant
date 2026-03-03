@@ -5,7 +5,7 @@
         <img class="sidebar-background-right-img" src="@/assets/pngs/BG/sidebar/R.png" />
       </div>
     </div>
-    <div class="sidebar">
+    <div class="sidebar" v-show="props.sidebarVisible">
       <div class="sidebar-left">
       </div>
       <div class="sidebar-right">
@@ -30,8 +30,8 @@
 
         <div class="sidebar-right-card card2">
           <BaseCard title="雨量监测" titleType="right" :contentBg="contentLbg1" width="344px" height="96px"
-            contentClass="Rcard2-content-row" clickable @titleClick="onCreateRainPoiClick"
-            @titleCancel="onCloseRainPoiClick">
+            contentClass="Rcard2-content-row" clickable @titleClick="handleCardTitleClick('rainMoni')"
+            @titleCancel="handleCardTitleCancel('rainMoni')">
             <div class="Rcard2-left-container">
               <div class="Rcard2-icon">
                 <img src="@/assets/pngs/BG/sidebar/Moni/card2/rain.png" />
@@ -55,7 +55,7 @@
 
         <div class="sidebar-right-card card3">
           <BaseCard title="水位监测" titleType="right" :contentBg="contentLbg1" width="344px" height="120px"
-            contentClass="Rcard3-content-row" clickable @titleCancel="onCloseWaterMoniClick">
+            contentClass="Rcard3-content-row" clickable @titleCancel="handleCardTitleCancel('waterMoni')">
             <div class="Rcard3-column-container">
               <div class="Rcard3-icon">
                 <img src="@/assets/pngs/BG/sidebar/Moni/card3/road.png" />
@@ -68,7 +68,7 @@
             <div class="Rcard3-column-container">
               <div class="Rcard3-icon">
                 <img src="@/assets/pngs/BG/sidebar/Moni/card3/pipe.png" class="water-moni-btn"
-                  @click="onOpenPipeLiquidClick" />
+                  @click="handleCardTitleClick('waterMoni')" />
                 <NumberUnit value="7" unit="个" />
                 管道液位
               </div>
@@ -87,8 +87,8 @@
 
         <div class="sidebar-right-card card4">
           <BaseCard title="积水点监测" titleType="right" :contentBg="contentLbg1" width="344px" height="310px"
-            contentClass="Rcard4-content-row" clickable @titleClick="onCreateWaterlogPoiClick"
-            @titleCancel="onCloseWaterlogPoiClick">
+            contentClass="Rcard4-content-row" clickable @titleClick="handleCardTitleClick('waterlogMoni')"
+            @titleCancel="handleCardTitleCancel('waterlogMoni')">
             <div class="card4-row1">
               <div class="card4-row1-icon">
                 <img class="card4-row1-icon-img" src="@/assets/pngs/BG/sidebar/card/card4-svg/row1-icon.png" />
@@ -119,6 +119,17 @@ import ReuseTable from "@/components/ReuseCop/Table.vue";
 import NumberUnit from "@/components/ReuseCop/NumberUnit.vue";
 import BaseCard from "@/components/ReuseCop/BaseCard.vue";
 
+const activeCardId = ref<string | null>(null)
+const props = defineProps({
+  sidebarVisible: { type: Boolean, default: true },
+})
+
+const cardConfigs = [
+  { id: 'rainMoni', onOpen: onCreateRainPoiClick, onClose: onCloseRainPoiClick },
+  { id: 'waterMoni', onOpen: onOpenPipeLiquidClick, onClose: onCloseWaterMoniClick },
+  { id: 'waterlogMoni', onOpen: onCreateWaterlogPoiClick, onClose: onCloseWaterlogPoiClick },
+]
+
 const emit = defineEmits<{
   (e: "create-rain-poi"): void;
   (e: "close-rain-poi"): void;
@@ -144,6 +155,31 @@ const defectColumns = [
   { key: "level", label: "水位" },
   { key: "type", label: "积水点类型" },
 ]
+
+const handleCardTitleClick = async (cardId: string) => {
+  const card = cardConfigs.find(c => c.id === cardId)
+  if (!card) return
+
+  if (activeCardId.value && activeCardId.value !== cardId) {
+    cardConfigs.find(c => c.id === activeCardId.value)?.onClose()
+    await new Promise(resolve => setTimeout(resolve, 500))
+  }
+
+  if (activeCardId.value === cardId) {
+    activeCardId.value = null
+    card.onClose()
+  } else {
+    activeCardId.value = cardId
+    card.onOpen()
+  }
+}
+
+const handleCardTitleCancel = (cardId: string) => {
+  const card = cardConfigs.find(c => c.id === cardId)
+  if (!card) return
+  if (activeCardId.value === cardId) activeCardId.value = null
+  card.onClose()
+}
 
 const onWaterlogRowClick = (rowIndex: number, rowData: any) => {
   console.log("点击行索引:", rowIndex);

@@ -1,50 +1,30 @@
 <template>
   <div class="chat-messages" ref="containerRef" @scroll="onScroll">
-    <MessageBubble
-      v-for="(m, index) in messages"
-      :key="m.id"
-      :id="m.id"
-      :index="index"
-      :role="m.role"
-      :content="m.content"
-      :feedback="m.feedback"
-      :typing="m.role === 'assistant' && isStreaming && m.content.length === 0"
-      @feedback="$emit('feedback', $event)"
-      @regenerate="emit('regenerate', index)"
-    />
+    <MessageBubble v-for="(m, index) in messages" :key="m.id" :id="m.id" :index="index" :role="m.role"
+      :content="m.content" :feedback="m.feedback"
+      :typing="m.role === 'assistant' && isStreaming && m.content.length === 0" @feedback="$emit('feedback', $event)"
+      @regenerate="emit('regenerate', index)" />
 
     <div v-if="isWaitingAction" class="system-tip">
-      <svg
-        t="1765353626494"
-        class="system-tip-icon"
-        viewBox="0 0 1024 1024"
-        version="1.1"
-        xmlns="http://www.w3.org/2000/svg"
-        p-id="91657"
-        width="36"
-        height="36"
-      >
+      <svg t="1765353626494" class="system-tip-icon" viewBox="0 0 1024 1024" version="1.1"
+        xmlns="http://www.w3.org/2000/svg" p-id="91657" width="36" height="36">
         <path
           d="M512 89.6a38.4 38.4 0 0 1 0 76.8A345.6 345.6 0 1 0 857.6 512a38.4 38.4 0 0 1 76.8 0 420.928 420.928 0 0 1-112.768 287.296l67.904 67.968a38.4 38.4 0 1 1-54.272 54.272l-70.848-70.784A422.4 422.4 0 1 1 512 89.6z"
-          fill="#0090d3"
-          p-id="91658"
-        ></path>
+          fill="#0090d3" p-id="91658"></path>
         <path
           d="M799.488 82.688l30.016 54.784c13.12 24.064 32.96 43.904 57.088 57.088l54.784 29.952a35.904 35.904 0 0 1 0 62.976l-54.784 30.016a143.616 143.616 0 0 0-57.088 57.024l-30.016 54.848a35.904 35.904 0 0 1-62.976 0l-29.952-54.848a143.616 143.616 0 0 0-57.088-57.024l-54.784-30.016a35.904 35.904 0 0 1 0-62.976l54.784-29.952c24.064-13.184 43.904-33.024 57.088-57.088l29.952-54.784a35.904 35.904 0 0 1 62.976 0zM559.872 393.408l14.848 27.136c6.592 12.16 16.64 22.144 28.736 28.8l27.136 14.784a18.112 18.112 0 0 1 0 31.744l-27.136 14.848a72.32 72.32 0 0 0-28.8 28.8l-14.784 27.072a18.112 18.112 0 0 1-31.744 0L513.28 539.52a72.32 72.32 0 0 0-28.736-28.8l-27.136-14.72a18.112 18.112 0 0 1 0-31.808l27.136-14.848c12.16-6.592 22.144-16.64 28.8-28.8l14.784-27.072a18.112 18.112 0 0 1 31.744 0z"
-          fill="#0090d3"
-          p-id="91659"
-        ></path>
+          fill="#0090d3" p-id="91659"></path>
       </svg>
       <span class="system-tip-text"> 正在对当前场景进行智能分析… </span>
     </div>
 
-    <button
-      v-if="!stickToBottom"
-      class="to-bottom"
-      @click="scrollToBottom(true)"
-      title="回到底部"
-    >
-      ↓
+    <button v-if="!stickToBottom" class="to-bottom" @click="scrollToBottom(true)" title="回到底部">
+      <svg t="1772430434675" class="icon" viewBox="0 0 1026 1024" version="1.1" xmlns="http://www.w3.org/2000/svg"
+        p-id="5543" width="16" height="10">
+        <path
+          d="M857.088 224.256q28.672-28.672 69.12-28.672t69.12 28.672q29.696 28.672 29.696 68.608t-29.696 68.608l-382.976 380.928q-12.288 14.336-30.72 19.968t-38.912 4.608-40.448-8.704-34.304-22.016l-376.832-374.784q-29.696-28.672-29.696-68.608t29.696-68.608q14.336-14.336 32.256-21.504t36.864-7.168 37.376 7.168 32.768 21.504l313.344 309.248z"
+          p-id="5544" fill="#e6e6e6"></path>
+      </svg>
     </button>
   </div>
 </template>
@@ -62,9 +42,9 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  (e: "feedback", index: number, type: "up" | "down"): void;
+  (e: "feedback", payload: { index: number; type: "up" | "down" }): void; // ← 改这里
   (e: "regenerate", index: number): void;
-}>();
+}>()
 
 const { containerRef, stickToBottom, onScroll, scrollToBottom } =
   useAutoScroll();
@@ -94,6 +74,7 @@ export default {
   scrollbar-width: none;
   scrollbar-color: rgba(0, 191, 255, 0.15) transparent;
 }
+
 .to-bottom {
   position: sticky;
   bottom: 6px;
@@ -102,9 +83,17 @@ export default {
   border: 1px solid rgba(255, 255, 255, 0.25);
   background: rgba(0, 0, 0, 0.35);
   color: #fff;
-  border-radius: 10px;
-  padding: 4px 8px;
+  width: 31px;
+  height: 30px;
+  border-radius: 50%;
+  padding: 8px 4px;
   cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.to-bottom:hover {
+  background: rgba(47, 126, 190, 0.565);
+  box-shadow: 0 0 10px rgba(0, 191, 255, 0.7);
 }
 
 .system-tip {
@@ -125,15 +114,19 @@ export default {
   0% {
     transform: translate(0, -3px);
   }
+
   25% {
     transform: translate(3px, 0px);
   }
+
   50% {
     transform: translate(0, 3px);
   }
+
   75% {
     transform: translate(-3px, 0px);
   }
+
   100% {
     transform: translate(0, -3px);
   }
@@ -151,9 +144,11 @@ export default {
   0% {
     opacity: 0.6;
   }
+
   50% {
     opacity: 1;
   }
+
   100% {
     opacity: 0.6;
   }

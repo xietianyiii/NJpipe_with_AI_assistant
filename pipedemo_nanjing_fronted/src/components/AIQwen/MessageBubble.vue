@@ -1,22 +1,16 @@
 <template>
   <div :class="['msg', role]">
     <div class="meta">
-      <span class="tag">{{ role === "user" ? "我" : "AI" }}</span>
+      <!-- <span class="tag">{{ role === "user" ? "我" : "AI" }}</span> -->
       <span v-if="typing" class="typing">●●●</span>
     </div>
     <div class="bubble">
       <div class="text" v-html="renderedContent"></div>
     </div>
-    <MessageActions
-      v-if="role === 'assistant' && !typing"
-      :content="content"
-      :can-regenerate="true"
-      :is-speaking="speakingId === id"
-      :feedback="feedback"
-      @speak="onSpeak"
-      @feedback="(payload) => $emit('feedback', { index, type: payload.type })"
-      @regenerate="$emit('regenerate', index)"
-    />
+    <MessageActions v-if="role === 'assistant' && !typing" :content="content" :can-regenerate="true"
+      :is-speaking="speakingId === id" :feedback="feedback" @speak="onSpeak"
+      @feedback="(payload) => $emit('feedback', props.index, payload.type)"
+      @regenerate="$emit('regenerate', index)" />
   </div>
 </template>
 
@@ -70,9 +64,11 @@ export default {
   flex-direction: column;
   gap: 4px;
 }
+
 .msg.user {
   align-items: flex-end;
 }
+
 .msg.assistant {
   align-items: flex-start;
 }
@@ -84,11 +80,13 @@ export default {
   gap: 8px;
   align-items: center;
 }
+
 .tag {
   padding: 2px 6px;
   border: 1px solid rgba(255, 255, 255, 0.25);
   border-radius: 999px;
 }
+
 .typing {
   letter-spacing: 2px;
   opacity: 0.8;
@@ -96,10 +94,12 @@ export default {
 }
 
 @keyframes blink {
+
   0%,
   100% {
     opacity: 0.3;
   }
+
   50% {
     opacity: 1;
   }
@@ -114,12 +114,17 @@ export default {
   box-shadow: 0 0 10px rgba(0, 191, 255, 0.35);
   word-break: break-word;
 }
+
 .msg.user .bubble {
-  background: rgba(0, 198, 255, 0.12);
+  background: rgba(120, 190, 45, 0.52);
+  border: 1px solid rgba(120, 190, 45, 0.18);
+  box-shadow: 0 0 10px rgba(120, 190, 45, 0.35);
 }
 
 .text :deep(p) {
   margin: 0 0 0 0;
+  font-size: 13px;
+  font-weight: 500;
 }
 
 .text :deep(pre) {
