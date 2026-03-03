@@ -1,8 +1,10 @@
 from fastapi.staticfiles import StaticFiles
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse, FileResponse
 from app.core.logging import setup_logging
 from app.core.request_context import generate_request_id, set_request_id
+import os
 
 from app.routers.pipes import router as pipes_router
 from app.routers.upload import router as upload_router
@@ -40,5 +42,9 @@ app.add_middleware(
 app.include_router(upload_router)
 app.include_router(pipes_router)
 app.include_router(ai_router)
-
-app.mount("/", StaticFiles(directory="web_dist", html=True), name="frontend")
+@app.get("/{catchall:path}")
+async def rollback(catchall: str):
+    file_path = os.path.join("web_dist", catchall)
+    if os.path.isfile(file_path):
+        return FileResponse(file_path)
+    return FileResponse(os.path.join("web_dist", "index.html"))
