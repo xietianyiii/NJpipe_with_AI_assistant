@@ -6,15 +6,15 @@
     <!-- 面板组件 -->
     <div class="panel-container">
       <Header />
-      <PullCord v-model="isSidebarVisible"/>
+      <PullCord v-model="isSidebarVisible" />
       <DrainagePanel v-if="activePanel === 'drainage'" :sidebarVisible="isSidebarVisible"
         @open-pipe-overview="handleOpenPipeOverview" @close-pipe-overview="handleClosePipeOverview"
         @create-pump-poi="handleCreatePumpPoi" @close-pump-poi="handleDeletePumpPoi"
         @open-sewage-plant="handleOpenSewagePlant" @close-sewage-plant="handleCloseSewagePlant"
         @open-water-zone="handleOpenWaterZone" @close-water-zone="handleCloseWaterZone"
         @open-struc-defect="handleOpenStrucDefect" @close-struc-defect="handleCloseStrucDefect"
-        @open-func-defect="handleOpenFuncDefect" @open-defect-detection="handleAIAnalysis"
-        @open-defect-repair="handleAIRepair" @close-func-defect="handleCloseFuncDefect" />
+        @open-func-defect="handleOpenFuncDefect" @open-defect-detection="handleButtonAnalysis"
+        @open-defect-repair="handleButtonRepair" @close-func-defect="handleCloseFuncDefect" />
       <MonitorPanel v-if="activePanel === 'monitor'" :sidebarVisible="isSidebarVisible"
         @create-rain-poi="handleCreateRainPoi" @close-rain-poi="handleDeleteRainPoi"
         @open-pipe-liquid="handleOpenPipeLiquid" @open-lake-moni="handleOpenLakeMoni"
@@ -44,6 +44,7 @@
         @close="showPipeAttriInfo = false" @ai-analysis="handleAIAnalysis" @ai-repair="handleAIRepair" />
 
       <PipeProblemCard v-show="showPipeProblemCard" :PipeProblemFID="PipeProblemFID"
+        v-model:repairButtonVisible="RepairButtonVisible" @open-defect-repair="handleButtonRepair"
         :pipeProblemData="pipeDetailProblemInfo" @row-click="handleRowClick" @close="showPipeProblemCard = false" />
 
       <PipeUploadCard v-show="showPipeUploadCard" v-model:pipe-upload-step-active="pipeUploadStepActive"
@@ -228,6 +229,8 @@ import Header from "@/components/Header";
 import Menu from "@/components/Menu";
 import { setStationVisibility } from "@/utils/SetStationVisibility";
 
+const RepairButtonVisible = ref(false);
+
 const temstyles = ref(["arrow",
   "round_pipe",
   "square_pipe",
@@ -362,6 +365,7 @@ const aiAnalysisTrigger = ref(false);
 const aiRepairTrigger = ref(false);
 const cameraLocation = ref("");
 const cameraRotation = ref("");
+const plainProblems = ref<PipeDetailProblemItem[]>([]);
 
 // 监听pipeUploadStepActive的变化
 watch(pipeUploadStepActive, async (newVal) => {
@@ -2220,15 +2224,7 @@ async function onArriveBackStart() {
   await handleClosePumpCar();
 }
 
-// 处理来自PipeClickInfo-card的AI分析事件
-async function handleAIAnalysis() {
-  console.log("接收到AI智能分析指令");
-  showPipeProblemCard.value = true;
-  aiAnalysisTrigger.value = true;
-
-  // 同时给 AI 一个“状态更新”
-  startWaitingAction(); // ⭐ 告诉 AI 对话框：正在扫描
-
+async function handlePipeProblemAnalysis() {
   await new Promise((resolve) => setTimeout(resolve, 1300));
 
   // -------- 第一批悬挂管线 --------
@@ -2475,24 +2471,47 @@ async function handleAIAnalysis() {
 
   aiAnalysisTrigger.value = false;
 
-  const plainProblems = JSON.parse(
+  plainProblems.value = JSON.parse(
     JSON.stringify(toRaw(pipeDetailProblemInfo.value))
   );
+}
+
+// 处理来自PipeClickInfo-card的AI分析事件
+async function handleAIAnalysis() {
+  console.log("接收到AI智能分析指令");
+
+  isSidebarVisible.value = false;
+
+  showPipeProblemCard.value = true;
+  aiAnalysisTrigger.value = true;
+
+  // 同时给 AI 一个“状态更新”
+  startWaitingAction(); // ⭐ 告诉 AI 对话框：正在扫描
+
+  await handlePipeProblemAnalysis();
+
+  aiAnalysisTrigger.value = false;
 
   // finishWaitingAction();
+
+  const aiproblems = plainProblems.value
 
   continueWithFeedback({
     type: "analysis_result",
     analyzed: true,
-    problems: plainProblems,
+    problems: aiproblems,
   });
 }
 
-// 处理来自PipeClickInfo-card的AI修复事件
-async function handleAIRepair() {
-  console.log("接收到AI智能修复指令");
-  aiRepairTrigger.value = true;
+async function handleButtonAnalysis() {
+  console.log("接收到分析指令");
+  showPipeProblemCard.value = true;
+  isSidebarVisible.value = false;
+  await handlePipeProblemAnalysis();
+  RepairButtonVisible.value = true;
+}
 
+async function handlePipeProblemRepair() {
   const fids1_problem = [
     "53393b07",
     "b50f7eb7",
@@ -2699,7 +2718,26 @@ async function handleAIRepair() {
   );
 
   await new Promise((resolve) => setTimeout(resolve, 500));
+}
+
+// 处理来自PipeClickInfo-card的AI修复事件
+async function handleAIRepair() {
+  console.log("接收到AI智能修复指令");
+  aiRepairTrigger.value = true;
+
+  await handlePipeProblemRepair();
+
   aiRepairTrigger.value = false;
+
+  isSidebarVisible.value = true;
+}
+
+async function handleButtonRepair() {
+  console.log("接收到修复指令");
+  RepairButtonVisible.value = false;
+  await handlePipeProblemRepair();
+  showPipeProblemCard.value = false;
+  isSidebarVisible.value = true;
 }
 
 function classifyRainStation(stationType: string, selected: string[]) {

@@ -286,12 +286,12 @@
               </div>
             </div>
             <div class="Rcard2-content-item3">
-              <div class="Rcard2-content-item1-button1" @click="handleDefectDetectionClick">
+              <div class="Rcard2-content-item3-button1" @click="handleDefectDetectionClick">
                 智能检测
               </div>
-              <div class="Rcard2-content-item1-button2" @click="handleDefectRepairClick">
+              <!-- <div class="Rcard2-content-item1-button2" @click="handleDefectRepairClick">
                 智能修复
-              </div>
+              </div> -->
             </div>
 
             <div class="Rcard2-content-item4">
@@ -937,6 +937,26 @@ const onDefectRowClick = (rowIndex: number, rowData: any) => {
   justify-content: center;
 }
 
+
+.Rcard2-content-item3-button1 {
+  font-size: 13px;
+  font-weight: 500;
+  font-family: "AlimamaAgileVF", sans-serif;
+  color: #fff;
+  background: url("@/assets/pngs/BG/sidebar/card/card6-svg/button.png") no-repeat center/ 100% 100%;
+  width: 200px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease-in-out;
+}
+
+.Rcard2-content-item3-button1:hover {
+  background: url("@/assets/pngs/BG/sidebar/card/card6-svg/hover.png") no-repeat center/ 100% 100%;
+  cursor: pointer;
+}
+
 .Rcard2-content-item1-button1,
 .Rcard2-content-item1-button2 {
   font-size: 13px;
@@ -953,7 +973,7 @@ const onDefectRowClick = (rowIndex: number, rowData: any) => {
 }
 
 .Rcard2-content-item1-button1:hover,
-.Rcard2-content-item1-button2:hover {
+.Rcard2-content-item1-button2:hover{
   background: url("@/assets/pngs/BG/sidebar/card/card6-svg/hover.png") no-repeat center/ contain;
   cursor: pointer;
 }

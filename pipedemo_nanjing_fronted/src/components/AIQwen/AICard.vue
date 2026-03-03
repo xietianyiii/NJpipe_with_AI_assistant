@@ -1,10 +1,6 @@
 <template>
-  <div
-    class="draggable-card"
-    :style="{ top: position.y + 'px', left: position.x + 'px' }"
-    @mousedown="startDrag"
-    ref="cardRef"
-  >
+  <div class="draggable-card" :style="{ top: position.y + 'px', left: position.x + 'px' }" @mousedown="startDrag"
+    ref="cardRef">
     <div class="card-header">
       <span>AI助手</span>
       <button class="close-btn" @click="$emit('close')">✕</button>
@@ -18,31 +14,16 @@
             alt="AI 助手"
             class="avatar1"
           /> -->
-          <img
-            src="@/assets/pngs/AICard/绿-发光.png"
-            alt="AI 助手"
-            class="avatar"
-          />
+          <img src="@/assets/pngs/AICard/WIM2.png" alt="AI 助手" class="avatar" />
         </div>
         <span class="introduce-text">你好，有什么可以帮你</span>
       </div>
 
-      <ChatView
-        :messages="messages"
-        :is-streaming="status === 'streaming'"
-        :is-waiting-action="status === 'waiting_action'"
-        @regenerate="onRegenerate"
-        @feedback="onFeedback"
-      />
+      <ChatView :messages="messages" :is-streaming="status === 'streaming'"
+        :is-waiting-action="status === 'waiting_action'" @regenerate="onRegenerate" @feedback="onFeedback" />
 
-      <ChatInput
-        v-model="input"
-        :is-streaming="status === 'streaming'"
-        :is-waiting-action="status === 'waiting_action'"
-        @send="send"
-        @stop="stop"
-        @clear="clear"
-      />
+      <ChatInput v-model="input" :is-streaming="status === 'streaming'" :is-waiting-action="status === 'waiting_action'"
+        @send="send" @stop="stop" @clear="clear" />
 
       <div v-if="status === 'error'" class="error">⚠️ {{ errorMsg }}</div>
     </div>
@@ -66,8 +47,10 @@ function onRegenerate(index: number) {
   props.chat.regenerateFrom(index);
 }
 
-function onFeedback(index: number, type: "up" | "down") {
-  console.log("用户点赞/点踩：", { index, type });
+function onFeedback(payload: { index: number; type: "up" | "down" }) {
+  console.log("用户点赞/点踩：", payload);
+
+  const { index, type } = payload;
   props.chat.toggleFeedback(index, type);
 }
 
@@ -199,7 +182,7 @@ const stopDrag = () => {
   inertiaAnimation();
 };
 
-onMounted(() => {});
+onMounted(() => { });
 </script>
 
 <style scoped>
@@ -237,6 +220,7 @@ onMounted(() => {});
     opacity: 0;
     transform: scale(0.8) translateY(20px);
   }
+
   to {
     opacity: 1;
     transform: scale(1) translateY(0);
@@ -258,11 +242,9 @@ onMounted(() => {});
 }
 
 .close-btn {
-  background: radial-gradient(
-    circle at 30% 30%,
-    rgba(5, 50, 66, 0.5),
-    rgba(0, 212, 255, 0.5)
-  );
+  background: radial-gradient(circle at 30% 30%,
+      rgba(5, 50, 66, 0.5),
+      rgba(0, 212, 255, 0.5));
   border: 1px solid rgba(248, 248, 248, 0.8);
   border-radius: 50%;
   width: 24px;
@@ -278,12 +260,10 @@ onMounted(() => {});
 }
 
 .close-btn:hover {
-  background: radial-gradient(
-    circle at 0% 60%,
-    #1a918b 0%,
-    #0099c8 60%,
-    #00e5ff 100%
-  );
+  background: radial-gradient(circle at 0% 60%,
+      #1a918b 0%,
+      #0099c8 60%,
+      #00e5ff 100%);
   box-shadow: 0 0 10px rgba(0, 255, 255, 1);
   transform: scale(1.1);
 }
@@ -300,6 +280,7 @@ onMounted(() => {});
     opacity: 0;
     transform: translateY(10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -325,9 +306,11 @@ onMounted(() => {});
 }
 
 .avatar {
-  width: 160px;
-  margin-right: -20px;
-  margin-left: -25px;
+  width: 60px;
+  margin-top: 30px;
+  margin-right: 30px;
+  margin-bottom: 30px;
+  /* margin-left: 30px; */
 }
 
 .avatar1 {
@@ -338,9 +321,10 @@ onMounted(() => {});
 .introduce-text {
   color: #ffffff;
   font-size: 18px;
+
 }
 
-.avatar-container{
+.avatar-container {
   display: flex;
   align-items: center;
 }

@@ -116,9 +116,9 @@ export default {
 }
 
 .msg.user .bubble {
-  background: rgba(120, 190, 45, 0.52);
-  border: 1px solid rgba(120, 190, 45, 0.18);
-  box-shadow: 0 0 10px rgba(120, 190, 45, 0.35);
+  background: rgba(62,143,231, 0.52);
+  border: 1px solid rgba(62,143,231, 0.18);
+  box-shadow: 0 0 10px rgba(62,143,231, 0.35);
 }
 
 .text :deep(p) {

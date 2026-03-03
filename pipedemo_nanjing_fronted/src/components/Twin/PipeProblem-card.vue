@@ -1,14 +1,10 @@
 <template>
-  <div
-    v-show="visible"
-    class="draggable-card"
-    :style="{ top: position.y + 'px', left: position.x + 'px' }"
-    @mousedown="startDrag"
-    ref="cardRef"
-  >
+  <div v-show="visible" class="draggable-card" :style="{ top: position.y + 'px', left: position.x + 'px' }"
+    ref="cardRef">
+    <!-- @mousedown="startDrag" -->
     <div class="card-header">
       <span class="card-header-text">管网问题清单 </span>
-      <button class="close-btn" @click="$emit('close')">✕</button>
+      <!-- <button class="close-btn" @click="$emit('close')">✕</button> -->
     </div>
 
     <div class="card-body">
@@ -19,7 +15,8 @@
         <span class="header-item">图例</span>
       </div>
       <transition-group name="row" tag="div">
-        <div class="mapping-row" v-for="(item, index) in pipeProblemData" :key="item.fid || PipeProblemFID[index] || index" @click="handleRowClick(item, index)">
+        <div class="mapping-row" v-for="(item, index) in pipeProblemData"
+          :key="item.fid || PipeProblemFID[index] || index" @click="handleRowClick(item, index)">
           <span class="value-item">{{ PipeProblemFID[index] || '未知ID' }}</span>
           <span class="value-item">{{ item.position || '未知位置' }}</span>
           <span class="value-item">{{ item.defectName || '未知缺陷' }}</span>
@@ -28,10 +25,13 @@
           </span>
         </div>
       </transition-group>
+
     </div>
 
     <div class="card-footer">
-      
+      <div v-show="repairButtonVisible" class="Rcard2-content-item3-button1" @click="handleDefectRepairClick">
+        智能修复
+      </div>
     </div>
   </div>
 </template>
@@ -49,15 +49,23 @@ import * as echarts from "echarts";
 
 const props = defineProps({
   visible: { type: Boolean, default: false },
-  PipeProblemFID: { type: Array, default: () => [] },
-  pipeProblemData: { type: Array, default: () => [] },
+  PipeProblemFID: { type: Array as () => string[], default: () => [] },
+  pipeProblemData: { type: Array as () => PipeDetailProblemItem[], default: () => [] },
   aiAnalysisTrigger: { type: Boolean, default: false },
   aiRepairTrigger: { type: Boolean, default: false },
+  repairButtonVisible: { type: Boolean, default: false },
 });
 
-const emit = defineEmits(["close", "ai-analysis", "ai-repair", "row-click"]);
+interface PipeDetailProblemItem {
+  fid: string;
+  position: string;
+  defectName: string;
+  color: string;
+}
 
-const position = ref({ x: 80, y: 120 });
+const emit = defineEmits(["close", "ai-analysis", "ai-repair", "row-click", "open-defect-repair","update:repairButtonVisible"]);
+
+const position = ref({ x: 40, y: 100 });
 const isDragging = ref(false);
 const offset = ref({ x: 0, y: 0 });
 const cardRef = ref<HTMLElement | null>(null);
@@ -73,23 +81,27 @@ const BOUND = {
   maxY: 370,
 };
 
-const startDrag = (e: MouseEvent) => {
-  if (!cardRef.value) return;
-  isDragging.value = true;
+function handleDefectRepairClick() {
+  emit("open-defect-repair");
+}
 
-  offset.value.x = e.clientX - position.value.x;
-  offset.value.y = e.clientY - position.value.y;
+// const startDrag = (e: MouseEvent) => {
+//   if (!cardRef.value) return;
+//   isDragging.value = true;
 
-  // 重置速度
-  velocity.value.x = 0;
-  velocity.value.y = 0;
-  lastPosition.value.x = position.value.x;
-  lastPosition.value.y = position.value.y;
-  lastTime.value = Date.now();
+//   offset.value.x = e.clientX - position.value.x;
+//   offset.value.y = e.clientY - position.value.y;
 
-  document.addEventListener("mousemove", onDrag);
-  document.addEventListener("mouseup", stopDrag);
-};
+//   // 重置速度
+//   velocity.value.x = 0;
+//   velocity.value.y = 0;
+//   lastPosition.value.x = position.value.x;
+//   lastPosition.value.y = position.value.y;
+//   lastTime.value = Date.now();
+
+//   document.addEventListener("mousemove", onDrag);
+//   document.addEventListener("mouseup", stopDrag);
+// };
 
 const onDrag = (e: MouseEvent) => {
   if (!isDragging.value) return;
@@ -200,7 +212,7 @@ watch(
     nextTick(() => {
       // 获取所有行元素
       const rows = document.querySelectorAll('.mapping-row');
-      
+
       // 为新增的行添加入场动画
       if (newVal.length > oldVal.length) {
         // 新增的行通常是最后一行
@@ -210,7 +222,7 @@ watch(
             newRow.classList.remove('row-enter-animation');
             void newRow.offsetHeight; // 触发重排
             newRow.classList.add('row-enter-animation');
-            
+
             // 1秒后移除动画类
             setTimeout(() => {
               newRow.classList.remove('row-enter-animation');
@@ -226,7 +238,7 @@ watch(
           container.classList.remove('value-change-animation');
           void container.offsetHeight; // 触发重排
           container.classList.add('value-change-animation');
-          
+
           // 1秒后移除动画类
           setTimeout(() => {
             container.classList.remove('value-change-animation');
@@ -247,7 +259,7 @@ watch(
         const container = document.querySelector(".card-body") as HTMLElement;
         container.classList.remove("value-change-animation");
         container.classList.remove("delete-animation");
-        
+
         // 根据数据变化类型添加相应的动画类
         if (newVal.length < oldVal.length) {
           // 删除数据时添加删除动画类
@@ -273,7 +285,7 @@ watch(
 );
 
 // 监听值变化并触发动画
-let animationTimeouts = [];
+let animationTimeouts: ReturnType<typeof setTimeout>[] = [];
 
 onBeforeUnmount(() => {
   // 清除所有待执行的定时器
@@ -334,6 +346,7 @@ const handleRowClick = (item: any, index: number) => {
     opacity: 0;
     transform: scale(0.8) translateY(20px);
   }
+
   to {
     opacity: 1;
     transform: scale(1) translateY(0);
@@ -362,11 +375,9 @@ const handleRowClick = (item: any, index: number) => {
 }
 
 .close-btn {
-  background: radial-gradient(
-    circle at 30% 30%,
-    rgba(5, 50, 66, 0.5),
-    rgba(0, 212, 255, 0.5)
-  );
+  background: radial-gradient(circle at 30% 30%,
+      rgba(5, 50, 66, 0.5),
+      rgba(0, 212, 255, 0.5));
   border: 1px solid rgba(248, 248, 248, 0.8);
   border-radius: 50%;
   width: 24px;
@@ -382,12 +393,10 @@ const handleRowClick = (item: any, index: number) => {
 }
 
 .close-btn:hover {
-  background: radial-gradient(
-    circle at 0% 60%,
-    #1a918b 0%,
-    #0099c8 60%,
-    #00e5ff 100%
-  );
+  background: radial-gradient(circle at 0% 60%,
+      #1a918b 0%,
+      #0099c8 60%,
+      #00e5ff 100%);
   box-shadow: 0 0 10px rgba(0, 255, 255, 1);
   transform: scale(1.1);
 }
@@ -405,6 +414,7 @@ const handleRowClick = (item: any, index: number) => {
     opacity: 0;
     transform: translateY(10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -421,10 +431,12 @@ const handleRowClick = (item: any, index: number) => {
     opacity: 0.7;
     transform: scale(0.98);
   }
+
   50% {
     opacity: 1;
     transform: scale(1.02);
   }
+
   100% {
     opacity: 1;
     transform: scale(1);
@@ -441,14 +453,17 @@ const handleRowClick = (item: any, index: number) => {
     opacity: 1;
     transform: scale(1);
   }
+
   30% {
     opacity: 0.8;
     transform: scale(0.98);
   }
+
   60% {
     opacity: 0.6;
     transform: scale(0.95);
   }
+
   100% {
     opacity: 1;
     transform: scale(1);
@@ -475,6 +490,7 @@ const handleRowClick = (item: any, index: number) => {
     opacity: 0;
     transform: translateX(20px);
   }
+
   100% {
     opacity: 1;
     transform: translateX(0);
@@ -506,11 +522,9 @@ const handleRowClick = (item: any, index: number) => {
   padding: 10px 0;
   opacity: 1;
   border-radius: 8px;
-  background: linear-gradient(
-    180deg,
-    rgba(36, 104, 190, 0.06) 0%,
-    rgba(0, 144, 211, 0.6) 105%
-  );
+  background: linear-gradient(180deg,
+      rgba(36, 104, 190, 0.06) 0%,
+      rgba(0, 144, 211, 0.6) 105%);
   box-sizing: border-box;
   border: 0.81px solid rgba(65, 129, 225, 0.3);
   margin-bottom: 3px;
@@ -622,15 +636,19 @@ const handleRowClick = (item: any, index: number) => {
   0% {
     transform: translate(0, -2px) scale(1.35);
   }
+
   25% {
     transform: translate(2px, 0px) scale(1.35);
   }
+
   50% {
     transform: translate(0, 2px) scale(1.35);
   }
+
   75% {
     transform: translate(-2px, 0px) scale(1.35);
   }
+
   100% {
     transform: translate(0, -2px) scale(1.35);
   }
@@ -640,9 +658,11 @@ const handleRowClick = (item: any, index: number) => {
   0% {
     transform: scale(1.2);
   }
+
   50% {
     transform: scale(1.6);
   }
+
   100% {
     transform: scale(1.2);
   }
@@ -654,7 +674,8 @@ const handleRowClick = (item: any, index: number) => {
   font-family: "SHJGSK";
   font-weight: lighter;
   line-height: 22px;
-  margin-left: 9px; /* 与图标保持间距 */
+  margin-left: 9px;
+  /* 与图标保持间距 */
   margin-right: 12px;
 }
 
@@ -664,5 +685,24 @@ const handleRowClick = (item: any, index: number) => {
   align-items: center;
   gap: 10px;
   margin-top: 15px;
+}
+
+.Rcard2-content-item3-button1 {
+  font-size: 13px;
+  font-weight: 500;
+  font-family: "AlimamaAgileVF", sans-serif;
+  color: #fff;
+  background: url("@/assets/pngs/BG/sidebar/card/card6-svg/button.png") no-repeat center/ 100% 100%;
+  width: 200px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease-in-out;
+}
+
+.Rcard2-content-item3-button1:hover {
+  background: url("@/assets/pngs/BG/sidebar/card/card6-svg/hover.png") no-repeat center/ 100% 100%;
+  cursor: pointer;
 }
 </style>
