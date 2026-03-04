@@ -1,5 +1,6 @@
 <template>
   <div class="twin-container">
+    <LoadingOverlay ref="loadingRef" />
     <img :src="logoUrl" class="logo" aria-hidden="true" />
     <!-- 渲染窗口 -->
     <div id="player" class="player"></div>
@@ -227,11 +228,13 @@ import DrainagePanel from "@/components/Drainage";
 import MonitorPanel from "@/components/Moni";
 import SimPanel from "@/components/Sim";
 import Header from "@/components/Header";
+import LoadingOverlay from "@/components/Loading/LoadingOverlay.vue";
 import Menu from "@/components/Menu";
 import { setStationVisibility } from "@/utils/SetStationVisibility";
 import logoUrl from "@/assets/51WORLD-LOGO.png";
 
 const RepairButtonVisible = ref(false);
+const loadingRef = ref<InstanceType<typeof LoadingOverlay> | null>(null)
 
 const temstyles = ref(["arrow",
   "round_pipe",
@@ -405,8 +408,6 @@ const showInfo = ref(false);
 const clickedGridID = ref<string>("359");
 const currentInuValue = ref<number>(51);
 const historyData = ref<number[]>([2, 1.2, 2.31, 1.34, 1.9, 2.3, 1.2]);
-const isLoading = ref(false);
-const showLoadingOverlay = ref(false);
 
 const currentLegendType = ref<"pump" | "rain" | "waterlog" | "pipe" | null>(
   null
@@ -451,6 +452,21 @@ const route = useRoute();
 const activePanel = computed(() => route.query.panel || "drainage");
 const routeAction = computed(() => route.query.action || "");
 
+// 自动递增到目标值（每秒 +1），返回 stop 函数可手动中止
+function autoProgress(maxVal: number): () => void {
+  const timer = setInterval(() => {
+    const current = loadingRef.value?.getProgress() ?? 0
+    if (current >= maxVal) {
+      clearInterval(timer)
+      return
+    }
+    loadingRef.value?.setProgress(current + 1)
+  }, 150)
+
+  // 返回停止函数，关键节点到达时调用
+  return () => clearInterval(timer)
+}
+
 /** 切换属性编辑卡显示状态 */
 function toggleAttriCard() {
   showPipeAttriInfo.value = !showPipeAttriInfo.value;
@@ -474,6 +490,7 @@ function handleInudationCardToggled(visible: boolean) {
 }
 
 onMounted(() => {
+  autoProgress(10);
   App = new WdpApi({
     id: "player",
     order: "50521d49202684083a92ea36f5efac41",
@@ -484,12 +501,13 @@ onMounted(() => {
   });
 
   App.Plugin.Install(WimApi);
-
   // 启动云渲染
   App.Renderer.Start()
     .then((res: any) => {
       if (res.success) {
         console.log("✅ WebRTC 连接成功，等待场景加载...");
+        loadingRef.value?.setProgress(15);
+        autoProgress(65);
         loadingText.value = "正在加载场景...";
         registerRenderEvents();
       } else {
@@ -580,6 +598,9 @@ function registerRenderEvents() {
       name: "onVideoReady",
       func: async function () {
         console.log("🎬 视频流连接成功，场景已渲染！");
+
+        loadingRef.value?.setProgress(70);
+        autoProgress(95);
         inundationGenerator = new InundationGenerator(App);
 
         // // 设置天气为 LightRain
@@ -600,7 +621,7 @@ function registerRenderEvents() {
         const rotation = { pitch: -8.504061698913574, yaw: -87.82658386230469 };
         await updateCamera(App, position, rotation, 2);
 
-        await new Promise((resolve) => setTimeout(resolve, 10000));
+        await new Promise((resolve) => setTimeout(resolve, 5000));
 
         // 创建管线
         await createPipeline(
@@ -632,6 +653,8 @@ function registerRenderEvents() {
             key: "rain_node",
           });
         }
+        await new Promise((resolve) => setTimeout(resolve, 5000));
+        loadingRef.value?.setProgress(100);
 
         await new Promise((resolve) => setTimeout(resolve, 10000));
         // 创建管线
@@ -3161,11 +3184,14 @@ onBeforeUnmount(() => {
   width: 13%;
   height: auto;
   opacity: 0.26;
-  z-index: 9999;
+  z-index: 9998;
   pointer-events: none;
   user-select: none;
-  -webkit-user-select: none; /* Safari support */
-  -moz-user-select: none; /* Firefox support */
-  -ms-user-select: none; /* IE10+/Edge support */
+  -webkit-user-select: none;
+  /* Safari support */
+  -moz-user-select: none;
+  /* Firefox support */
+  -ms-user-select: none;
+  /* IE10+/Edge support */
 }
 </style>
