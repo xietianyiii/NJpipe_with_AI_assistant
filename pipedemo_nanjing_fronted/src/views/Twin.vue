@@ -1,5 +1,6 @@
 <template>
   <div class="twin-container">
+    <img :src="logoUrl" class="logo" aria-hidden="true" />
     <!-- 渲染窗口 -->
     <div id="player" class="player"></div>
 
@@ -228,6 +229,7 @@ import SimPanel from "@/components/Sim";
 import Header from "@/components/Header";
 import Menu from "@/components/Menu";
 import { setStationVisibility } from "@/utils/SetStationVisibility";
+import logoUrl from "@/assets/51WORLD-LOGO.png";
 
 const RepairButtonVisible = ref(false);
 
@@ -3149,5 +3151,21 @@ onBeforeUnmount(() => {
 
 .sidebar-toggle-btn {
   pointer-events: auto;
+}
+
+.logo {
+  position: fixed;
+  top: 42%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 13%;
+  height: auto;
+  opacity: 0.26;
+  z-index: 9999;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-select: none; /* Safari support */
+  -moz-user-select: none; /* Firefox support */
+  -ms-user-select: none; /* IE10+/Edge support */
 }
 </style>
