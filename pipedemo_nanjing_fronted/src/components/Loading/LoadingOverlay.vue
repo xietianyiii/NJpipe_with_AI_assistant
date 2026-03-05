@@ -276,7 +276,7 @@ defineExpose({
         height: 400px;
         top: 0;
         left: 50%;
-        background-color: rgba(6, 13, 26, 0.75);
+        background-color: rgba(26, 9, 66, 0.75);
         border-radius: 45% 47% 43% 46%;
         transform: translate(-50%, -70%) rotate(0);
         animation: rotate 7s linear infinite;
@@ -296,7 +296,7 @@ defineExpose({
     position: relative;
     width: 200px;
     height: 200px;
-    background: linear-gradient(180deg, #00aaff 0%, #0044cc 60%, #002a80 100%);
+    background: linear-gradient(180deg, #c3d6df 0%, #0044cc 60%, #5c667a 100%);
 }
 
 /* ── 水面百分比 ─────────────────────────────── */

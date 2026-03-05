@@ -78,7 +78,8 @@
 
         <button class="control-btn" @click="handleUpdateCamera">
           <span>更新相机</span>
-        </button>  -->
+        </button> -->
+
         <!-- <button class="control-btn" @click="handleGetCameraInfo">
           <span>获取相机信息</span>
         </button>
@@ -413,6 +414,7 @@ const currentLegendType = ref<"pump" | "rain" | "waterlog" | "pipe" | null>(
   null
 );
 const PumpPoiRegistry = ref<{ customId: string; stationType: string }[]>([]);
+const SewageLabelRegistry = ref<{ customId: string; stationType: string }[]>([]);
 const RainPoiRegistry = ref<{ customId: string; stationType: string }[]>([]);
 const WaterLoggingPoiRegistry = ref<
   { customId: string; stationType: string }[]
@@ -1313,6 +1315,8 @@ async function handleOpenPipeOverview() {
   const rotation = { pitch: -22.230609893798828, yaw: 89.97012329101562 };
   await updateCamera(App, position, rotation, 2);
   // await setSceneStyle(App, "dark");
+  await setPipelineVisible(App, false, "sewage_line", ["SN", "SL", "ZT"]);
+  await setPipeNodeVisible(App, false, "sewage_node", ["HNT"]);
   await setSceneOpacity(App, "水系", 0);
   await setSceneOpacity(App, "建筑", 0);
   await setSceneOpacity(App, "地形", 0);
@@ -1326,12 +1330,14 @@ async function handleClosePipeOverview() {
   ];
   const rotation = { pitch: -8.504061698913574, yaw: -87.82658386230469 };
   await updateCamera(App, position, rotation, 2);
-  await new Promise((resolve) => setTimeout(resolve, 1000));
+  await new Promise((resolve) => setTimeout(resolve, 500));
   await setSceneStyle(App, "false");
   await setSceneOpacity(App, "水系", 1);
   await setSceneOpacity(App, "建筑", 1);
   await setSceneOpacity(App, "地形", 1);
   await setSceneOpacity(App, "道路", 1);
+  await setPipelineVisible(App, true, "sewage_line", ["SN", "SL", "ZT"]);
+  await setPipeNodeVisible(App, true, "sewage_node", ["HNT"]);
 }
 
 async function handleSceneStyleClicked(style: string, weather: string, blurType: string, blurValue: number) {
@@ -1418,7 +1424,7 @@ async function handleInundationExecute(data: {
 
       await createAndRunInundation(
         App,
-        "http://10.100.10.124:8090/inundation/water_point_grid/nanjing/Inud_Gen_Grid-1968.json",
+        "http://10.100.10.124:8090/inundation/water_point_grid/nanjing/Inud_Gen_Grid-870.json",
         4
       )
       await enableInundationInteract(App, true, true);
@@ -1551,6 +1557,8 @@ async function handleOpenSewagePlant() {
   const rotation = { pitch: -19.70302963256836, yaw: 33.881568908691406 };
   await updateCamera(App, position, rotation, 2);
 
+  console.log("📩 收到污水厂监测按钮点击事件");
+
   await createMovePathsFromRecord(
     App,
     SewageBlueMovePaths,
@@ -1578,10 +1586,79 @@ async function handleOpenSewagePlant() {
       coordZOffset: 2,
     }
   );
+
+  const coords: [number, number, number?][] = [
+    [118.85394623588988, 31.905129532495234, 0],
+    [118.85347421338899, 31.904478317128117, 0],
+    [118.85429529225091, 31.904579939644325, 0],
+    [118.85301246656975, 31.90387428269415, 0],
+    [118.85242526876515, 31.903476035613426, 0],
+    [118.8519746165526, 31.902942512476304, 0],
+    [118.85266789760794, 31.90299601368262, 0],
+    [118.85337363785995, 31.902515476113255, 0],
+  ];
+
+  const markerNormals = [
+    "http://10.100.10.124:8090/inundation/poi/sewagePlant1.png",
+    "http://10.100.10.124:8090/inundation/poi/sewagePlant2.png",
+    "http://10.100.10.124:8090/inundation/poi/sewagePlant3.png",
+    "http://10.100.10.124:8090/inundation/poi/sewagePlant4.png",
+    "http://10.100.10.124:8090/inundation/poi/sewagePlant5.png",
+    "http://10.100.10.124:8090/inundation/poi/sewagePlant6.png",
+    "http://10.100.10.124:8090/inundation/poi/sewagePlant7.png",
+    "http://10.100.10.124:8090/inundation/poi/sewagePlant8.png",
+  ];
+
+  const markerActives = [
+    "http://10.100.10.124:8090/inundation/poi/sewagePlant1.png",
+    "http://10.100.10.124:8090/inundation/poi/sewagePlant2.png",
+    "http://10.100.10.124:8090/inundation/poi/sewagePlant3.png",
+    "http://10.100.10.124:8090/inundation/poi/sewagePlant4.png",
+    "http://10.100.10.124:8090/inundation/poi/sewagePlant5.png",
+    "http://10.100.10.124:8090/inundation/poi/sewagePlant6.png",
+    "http://10.100.10.124:8090/inundation/poi/sewagePlant7.png",
+    "http://10.100.10.124:8090/inundation/poi/sewagePlant8.png",
+  ];
+
+  const labelTexts = [
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+  ];
+
+  const infoUrls: string[] = [];
+  const curveUrls: string[] = [];
+  const stationTypes: string[] = [];
+
+  SewageLabelRegistry.value = await createPois(
+    App,
+    coords,
+    markerNormals,
+    markerActives,
+    infoUrls,
+    curveUrls,
+    stationTypes,
+    openStationCurve,
+    [500, 320],
+    labelTexts,
+    [122.3, 68.7],
+    20,
+  );
+
+  console.log("📋 已记录的对象信息:", SewageLabelRegistry.value);
+  showLegendCard.value = false;
+
+  setTimeout(() => fixWdpInputBug(), 500);
 }
 
 async function handleCloseSewagePlant() {
   console.log("📩 收到污水厂监测按钮关闭点击事件");
+  await handleDeleteAllPois(App, SewageLabelRegistry.value);
   await deleteAllMovePaths(App);
 }
 

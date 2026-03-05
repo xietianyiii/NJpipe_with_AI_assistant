@@ -18,6 +18,8 @@ interface CreatedEntityInfo {
  * @param onCurveOpen - 曲线按钮点击回调（可选）
  * @param infoWindowSize - 信息窗口大小 [width, height]（可选）
  * @param labelText - 标签内容（可选）
+ * @param markerSize - 图标大小 [width, height]（可选）
+ * @param coordZOffset - 坐标 Z 轴偏移量（可选）
  */
 export async function createPois(
     App: any,
@@ -30,6 +32,8 @@ export async function createPois(
     onCurveOpen?: (station: string, type?: string) => void,
     infoWindowSize?: [number, number],
     labelText?: string | string[],
+    markerSize?: [number, number] | [number, number][],
+    coordZOffset?: number,
 ): Promise<CreatedEntityInfo[]> {
     if (!App || !coords?.length) {
         console.error("❌ App 实例或坐标数组无效");
@@ -144,6 +148,10 @@ export async function createPois(
                         ? (labelText[i] ?? labelText[0] ?? "")
                         : "";
 
+            const currentMarkerSize = Array.isArray(markerSize?.[0])
+                ? (markerSize as [number, number][])[i] ?? (markerSize as [number, number][])[0]
+                : (markerSize as [number, number] | undefined) ?? [140, 72];
+
             // -------- POI --------
             jsonData.push({
                 type: "Poi",
@@ -154,11 +162,11 @@ export async function createPois(
                 poiStyle: {
                     markerNormalUrl: currentMarkerNormal,
                     markerActivateUrl: currentMarkerActive,
-                    markerSize: [140, 72],
+                    markerSize: currentMarkerSize,
                     markerVisible: true,
                     labelBgSize: [177, 66],
                     labelBgOffset: [-60, 81],
-                    labelContent: [currentLabelText, "ffffff", "14"], // ✅ 修复点
+                    labelContent: [currentLabelText, "ffffff", "14"],
                     labelContentOffset: [45, 23],
                     labelTop: true,
                 },
@@ -213,7 +221,7 @@ export async function createPois(
 
         const res = await App.Scene.Creates(jsonData, {
             calculateCoordZ: hasGroundPoint
-                ? { coordZRef: "ground", coordZOffset: 0 }
+                ? { coordZRef: "ground", coordZOffset: coordZOffset ?? 0 }
                 : { coordZRef: "surface", coordZOffset: 20 },
         });
 

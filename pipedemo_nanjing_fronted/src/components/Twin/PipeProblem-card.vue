@@ -4,7 +4,7 @@
     <!-- @mousedown="startDrag" -->
     <div class="card-header">
       <span class="card-header-text">管网问题清单 </span>
-      <!-- <button class="close-btn" @click="$emit('close')">✕</button> -->
+      <button class="close-btn" @click="$emit('close')">✕</button>
     </div>
 
     <div class="card-body">
